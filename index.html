@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MovieFlix - Movie Recommendation System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <a href="#" class="logo">Movie<span>Flix</span></a>
+        
+        <ul class="nav-links">
+            <li><a href="#" class="active">Home</a></li>
+            <li><a href="#trending">Trending</a></li>
+            <li><a href="#movies">Movies</a></li>
+            <li><a href="#series">TV Shows</a></li>
+            <li><a href="#mylist">My List</a></li>
+        </ul>
+        
+        <div class="nav-right">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search movies...">
+            </div>
+            <div class="profile-btn">
+                <i class="fas fa-user"></i>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <i class="fas fa-fire"></i>
+                <span>#1 Trending Today</span>
+            </div>
+            <h1>Discover Your Next Favorite Movie</h1>
+            <p>Get personalized movie recommendations based on your taste. Explore thousands of movies and TV shows from all genres. Start your cinematic journey today!</p>
+            
+            <div class="hero-buttons">
+                <button class="btn btn-primary">
+                    <i class="fas fa-play"></i>
+                    Watch Now
+                </button>
+                <button class="btn btn-secondary">
+                    <i class="fas fa-info-circle"></i>
+                    More Info
+                </button>
+            </div>
+            
+            <div class="hero-stats">
+                <div class="stat">
+                    <h3>10K+</h3>
+                    <p>Movies & Shows</p>
+                </div>
+                <div class="stat">
+                    <h3>500K+</h3>
+                    <p>Happy Users</p>
+                </div>
+                <div class="stat">
+                    <h3>50+</h3>
+                    <p>Genres</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Genre Filter -->
+    <section class="section" id="movies">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="fas fa-film"></i>
+                Browse by Genre
+            </h2>
+        </div>
+        
+        <div class="genre-filter">
+            <button class="genre-btn active" data-genre="all">All</button>
+            <button class="genre-btn" data-genre="action">Action</button>
+            <button class="genre-btn" data-genre="comedy">Comedy</button>
+            <button class="genre-btn" data-genre="drama">Drama</button>
+            <button class="genre-btn" data-genre="horror">Horror</button>
+            <button class="genre-btn" data-genre="scifi">Sci-Fi</button>
+            <button class="genre-btn" data-genre="romance">Romance</button>
+            <button class="genre-btn" data-genre="thriller">Thriller</button>
+        </div>
+    </section>
+
+    <!-- Trending Now -->
+    <section class="section" id="trending">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="fas fa-fire-alt"></i>
+                Trending Now
+            </h2>
+            <a href="#" class="view-all">View All <i class="fas fa-chevron-right"></i></a>
+        </div>
+        
+        <div class="movies-row" id="trendingMovies">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Top 10 -->
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="fas fa-trophy"></i>
+                Top 10 in India Today
+            </h2>
+        </div>
+        
+        <div class="movies-row" id="top10Movies"></div>
+    </section>
+
+    <!-- Action Movies -->
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="fas fa-bomb"></i>
+                Action & Adventure
+            </h2>
+            <a href="#" class="view-all">View All <i class="fas fa-chevron-right"></i></a>
+        </div>
+        
+        <div class="movies-row" id="actionMovies"></div>
+    </section>
+
+    <!-- Comedy Movies -->
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="fas fa-laugh-squint"></i>
+                Comedy Movies
+            </h2>
+            <a href="#" class="view-all">View All <i class="fas fa-chevron-right"></i></a>
+        </div>
+        
+        <div class="movies-row" id="comedyMovies"></div>
+    </section>
+
+    <!-- Recommendations -->
+    <section class="recommendation-section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="fas fa-magic"></i>
+                Recommended For You
+            </h2>
+        </div>
+        <p class="rec-subtitle">Based on your watching history and preferences</p>
+        
+        <div class="recommendation-grid" id="recommendations"></div>
+    </section>
+
+    <!-- New Releases -->
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="fas fa-star"></i>
+                New Releases
+            </h2>
+            <a href="#" class="view-all">View All <i class="fas fa-chevron-right"></i></a>
+        </div>
+        
+        <div class="movies-row" id="newReleases"></div>
+    </section>
+
+    <!-- Horror Movies -->
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="fas fa-ghost"></i>
+                Horror & Thriller
+            </h2>
+            <a href="#" class="view-all">View All <i class="fas fa-chevron-right"></i></a>
+        </div>
+        
+        <div class="movies-row" id="horrorMovies"></div>
+    </section>
+
+    <!-- Movie Modal -->
+    <div class="modal" id="movieModal">
+        <div class="modal-content">
+            <button class="modal-close" id="modalClose">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="modal-poster-container">
+                <img class="modal-poster" id="modalPoster" src="" alt="">
+                <div class="modal-poster-overlay"></div>
+                <div class="modal-play-btn">
+                    <i class="fas fa-play"></i>
+                </div>
+            </div>
+            
+            <div class="modal-body">
+                <h2 class="modal-title" id="modalTitle">Movie Title</h2>
+                
+                <div class="modal-meta">
+                    <span class="rating"><i class="fas fa-star"></i> <span id="modalRating">8.5</span></span>
+                    <span><i class="fas fa-calendar"></i> <span id="modalYear">2024</span></span>
+                    <span><i class="fas fa-clock"></i> <span id="modalDuration">2h 30m</span></span>
+                    <span><i class="fas fa-globe"></i> <span id="modalLanguage">English</span></span>
+                </div>
+
+                <div class="modal-tags" id="modalTags"></div>
+                
+                <p class="modal-desc" id="modalDesc">Movie description goes here...</p>
+                
+                <div class="modal-info">
+                    <div class="modal-info-item">
+                        <label>Director</label>
+                        <p id="modalDirector">Christopher Nolan</p>
+                    </div>
+                    <div class="modal-info-item">
+                        <label>Genre</label>
+                        <p id="modalGenre">Action, Sci-Fi</p>
+                    </div>
+                    <div class="modal-info-item">
+                        <label>Cast</label>
+                        <p id="modalCast">Actor 1, Actor 2</p>
+                    </div>
+                    <div class="modal-info-item">
+                        <label>Quality</label>
+                        <p>4K Ultra HD</p>
+                    </div>
+                </div>
+                
+                <div class="modal-buttons">
+                    <button class="btn btn-primary">
+                        <i class="fas fa-play"></i>
+                        Play Now
+                    </button>
+                    <button class="btn btn-secondary" id="addToListBtn">
+                        <i class="fas fa-plus"></i>
+                        Add to List
+                    </button>
+                    <button class="btn btn-secondary">
+                        <i class="fas fa-download"></i>
+                        Download
+                    </button>
+                    <button class="btn btn-icon" id="likeBtn">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                    <button class="btn btn-icon" id="shareBtn">
+                        <i class="fas fa-share"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle" id="toastIcon"></i>
+        <span id="toastMessage">Added to your list!</span>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <a href="#" class="logo footer-logo">Movie<span>Flix</span></a>
+                <p class="footer-desc">
+                    Your ultimate destination for movie recommendations. Discover, watch, and enjoy!
+                </p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="#">Home</a>
+                <a href="#">Movies</a>
+                <a href="#">TV Shows</a>
+                <a href="#">New & Popular</a>
+                <a href="#">My List</a>
+            </div>
+            
+            <div class="footer-section">
+                <h4>Categories</h4>
+                <a href="#">Action</a>
+                <a href="#">Comedy</a>
+                <a href="#">Drama</a>
+                <a href="#">Horror</a>
+                <a href="#">Romance</a>
+            </div>
+            
+            <div class="footer-section">
+                <h4>Support</h4>
+                <a href="#">FAQ</a>
+                <a href="#">Help Center</a>
+                <a href="#">Contact Us</a>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2024 MovieFlix. All rights reserved. Made with ❤️ for movie lovers.</p>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <script src="script.js"></script>
+</body>
+</html>
