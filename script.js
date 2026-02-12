@@ -228,6 +228,20 @@ const movies = [
         description: "A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious, ill-fated R.M.S. Titanic.",
         poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&h=600&fit=crop",
         match: 84
+    },
+    {
+        id: 17,
+        title: "The Godfather",
+        year: 1972,
+        rating: 9.2,
+        genre: ["crime", "drama"],
+        duration: "2h 55m",
+        language: "English",
+        director: "Francis Ford Coppola",
+        cast: "Marlon Brando, Al Pacino, James Caan",
+        description: "The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.",
+        poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&h=600&fit=crop",
+        match: 84
     }
 ];
 
