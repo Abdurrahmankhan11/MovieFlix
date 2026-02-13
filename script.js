@@ -256,34 +256,6 @@ const movies = [
         description: "A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious, ill-fated R.M.S. Titanic.",
         poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&h=600&fit=crop",
         match: 84
-    },
-    {
-        id: 19,
-        title: "Titanic",
-        year: 1997,
-        rating: 7.9,
-        genre: ["romance", "drama"],
-        duration: "3h 14m",
-        language: "English",
-        director: "James Cameron",
-        cast: "Leonardo DiCaprio, Kate Winslet, Billy Zane",
-        description: "A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious, ill-fated R.M.S. Titanic.",
-        poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&h=600&fit=crop",
-        match: 84
-    },
-    {
-        id: 20,
-        title: "Titanic",
-        year: 1997,
-        rating: 7.9,
-        genre: ["romance", "drama"],
-        duration: "3h 14m",
-        language: "English",
-        director: "James Cameron",
-        cast: "Leonardo DiCaprio, Kate Winslet, Billy Zane",
-        description: "A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious, ill-fated R.M.S. Titanic.",
-        poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&h=600&fit=crop",
-        match: 84
     }
 ];
 
