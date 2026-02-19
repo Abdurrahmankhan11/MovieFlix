@@ -1720,3 +1720,607 @@ console.log('%cWelcome to MovieFlix - Your Movie Recommendation System!', 'font-
 //     alignItems: 'center',
 //   },
 // });
+
+
+
+
+
+
+
+
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Modal,
+  TextInput,
+  Image,
+  FlatList,
+} from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import { useTheme } from 'react-native-paper';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { size } from '../../constants/size';
+import { FetchAllUser } from '../../services/api/Users';
+import BaseUrl from '../../services/api/BaseApi';
+import Loader from '../../components/Loader';
+import { routes } from '../../navigation/routes/routes';
+
+const groupOptions = [
+  {
+    key: 'create',
+    title: 'Create New Group',
+    subtitle: 'Start a new group chat',
+    icon: 'account-multiple-plus',
+  },
+  {
+    key: 'manage',
+    title: 'My Groups',
+    subtitle: 'View and manage your groups',
+    icon: 'account-group',
+    screen: 'MyGroups',
+  },
+];
+
+const GroupChats = () => {
+  const theme = useTheme();
+  const navigation = useNavigation();
+  const [createGroupVisible, setCreateGroupVisible] = useState(false);
+  const inputRef = useRef(null);
+  const [query, setQuery] = useState('');
+
+  const [search, setSearch] = useState('');
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [pageNumber, setPageNumber] = useState(0);
+  const [pageSize] = useState(5);
+  const [friendsImages, setFriendsImages] = useState({});
+  const [selectedUsers, setSelectedUsers] = useState([]);
+
+  const debounceRef = useRef(null);
+  const isFetchingRef = useRef(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    if (createGroupVisible) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [createGroupVisible]);
+
+  // Handle text change
+  const handleChangeText = text => {
+    setQuery(text);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    debounceRef.current = setTimeout(() => {
+      setPageNumber(0);
+      setSearch(text.trim());
+    }, 500);
+  };
+
+  const handlePress = item => {
+    if (item.key === 'create') {
+      setCreateGroupVisible(true);
+    } else {
+      navigation.navigate(item.screen);
+    }
+  };
+
+  const fetchUsersImage = async profilePicUrl => {
+    try {
+      const response = await BaseUrl.get(
+        `/social-media/uploads/${profilePicUrl}`,
+        { responseType: 'arraybuffer' }
+      );
+
+      const binary = Array.from(new Uint8Array(response.data))
+        .map(byte => String.fromCharCode(byte))
+        .join('');
+
+      const base64 = btoa(binary);
+      return `data:image/jpeg;base64,${base64}`;
+    } catch (err) {
+      showSnackbar('Error loading profile pics!');
+      return null;
+    }
+  };
+
+  const toggleUser = (user) => {
+    setSelectedUsers(prev => {
+      const exists = prev.find(u => u.id === user.id);
+      if (exists) {
+        return prev.filter(u => u.id !== user.id);
+      } else {
+        return [...prev, user];
+      }
+    });
+  };
+
+
+
+  const GetAllUsers = async (currentSearch, currentPage) => {
+    if (isFetchingRef.current) return;
+
+    isFetchingRef.current = true;
+    setLoading(true);
+
+    try {
+      const response = await FetchAllUser(currentSearch, currentPage, pageSize);
+      const pageUsers = response?.userResponses || [];
+
+      setUsers(prev =>
+        currentPage === 0 ? pageUsers : [...prev, ...pageUsers],
+      );
+
+      // Fetch profile images
+      const toFetch = pageUsers.filter(
+        u => u.profilePicUrl && !friendsImages[u.id]
+      );
+
+      const promises = toFetch.map(async u => {
+        const base64uri = await fetchUsersImage(u.profilePicUrl);
+        return { id: u.id, uri: base64uri };
+      });
+
+      const results = await Promise.all(promises);
+
+      const newMap = { ...friendsImages };
+      results.forEach(r => {
+        if (r?.uri) newMap[r.id] = r.uri;
+      });
+
+      setFriendsImages(newMap);
+
+    } catch (err) {
+      showSnackbar('Failed to load users!');
+    } finally {
+      setLoading(false);
+      isFetchingRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (!search.trim()) {
+      setUsers([]);
+      return;
+    }
+
+    GetAllUsers(search, pageNumber);
+  }, [search, pageNumber]);
+
+
+  const handleEndReached = () => {
+    if (loading) return;
+    if (users.length < (pageNumber + 1) * pageSize) return;
+
+    setPageNumber(prev => prev + 1);
+  };
+
+
+  // const renderUserItem = ({ item }) => (
+  //   <View style={[styles.userItem, { borderBottomColor: theme.colors.outline }]}>
+  //     <View style={styles.leftHeader}>
+  //       <Image
+  //         source={
+  //           friendsImages[item.id]
+  //             ? { uri: friendsImages[item.id] }
+  //             : require('../../assets/images/profileDefault.png')
+  //         }
+  //         style={styles.imgSm}
+  //       />
+  //       <View style={styles.headerUserNames}>
+  //         <Text style={[theme.fonts.titleMedium, { color: theme.colors.onSurface }]}>
+  //           {item.firstName} {item.lastName}
+  //         </Text>
+  //         <Text style={[theme.fonts.labelMedium, { color: theme.colors.secondary }]}>
+  //           @{item.userName}
+  //         </Text>
+  //       </View>
+  //     </View>
+  //   </View>
+  // );
+
+  const renderUserItem = ({ item }) => {
+    const isSelected = selectedUsers.some(u => u.id === item.id);
+
+    return (
+      <TouchableOpacity
+        onPress={() => toggleUser(item)}
+        style={[
+          styles.userItem,
+          { borderBottomColor: theme.colors.outline },
+          isSelected && {
+            // backgroundColor: theme.colors.primaryContainer,
+          },
+        ]}
+      >
+        {/* LEFT SIDE */}
+        <View style={styles.leftHeader}>
+          <Image
+            source={
+              friendsImages[item.id]
+                ? { uri: friendsImages[item.id] }
+                : require('../../assets/images/profileDefault.png')
+            }
+            style={styles.imgSm}
+          />
+
+          <View style={styles.headerUserNames}>
+            <Text
+              style={[
+                theme.fonts.titleMedium,
+                { color: theme.colors.onSurface },
+              ]}
+            >
+              {item.firstName} {item.lastName}
+            </Text>
+
+            <Text
+              style={[
+                theme.fonts.labelMedium,
+                { color: theme.colors.secondary },
+              ]}
+            >
+              @{item.userName}
+            </Text>
+          </View>
+        </View>
+
+        {/* RIGHT SIDE (CHECK ICON) */}
+        {isSelected && (
+          <MaterialCommunityIcons
+            name="check-circle"
+            size={24}
+            color={theme.colors.primary}
+          />
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+
+  return (
+    <>
+      <ScrollView
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
+      >
+        <View style={styles.section}>
+          {groupOptions.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.optionItem,
+                { borderBottomColor: theme.colors.outline },
+              ]}
+              onPress={() => handlePress(item)}
+            >
+              <MaterialCommunityIcons
+                name={item.icon}
+                size={size.iconMd}
+                color={theme.colors.primary}
+                style={styles.icon}
+              />
+
+              <View style={styles.textContainer}>
+                <Text
+                  style={[
+                    theme.fonts.bodyLarge,
+                    { color: theme.colors.onBackground },
+                  ]}
+                >
+                  {item.title}
+                </Text>
+
+                <Text
+                  style={[
+                    theme.fonts.labelMedium,
+                    { color: theme.colors.onSurfaceVariant },
+                  ]}
+                >
+                  {item.subtitle}
+                </Text>
+              </View>
+
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={size.iconSm}
+                color={theme.colors.onSurfaceVariant}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+
+      {/* ===== Create Group Modal ===== */}
+      <Modal
+        visible={createGroupVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setCreateGroupVisible(false)}
+      >
+        <View
+          style={[
+            styles.modalOverlay,
+            { backgroundColor: theme.colors.backdrop },
+          ]}
+        >
+          <View
+            style={[
+              styles.modalContainer,
+              { backgroundColor: theme.colors.surface },
+            ]}
+          >
+            {/* Header */}
+            <View
+              style={[
+                styles.modalHeader,
+                { borderBottomColor: theme.colors.outline },
+              ]}
+            >
+              {/* Left */}
+              <TouchableOpacity
+                style={styles.headerIcon}
+                onPress={() => setCreateGroupVisible(false)}
+              >
+                <MaterialCommunityIcons
+                  name="close"
+                  size={size.iconSm}
+                  color={theme.colors.onSurfaceVariant}
+                />
+              </TouchableOpacity>
+
+              {/* Center */}
+              <Text
+                style={[
+                  theme.fonts.titleMedium,
+                  styles.headerTitle,
+                  { color: theme.colors.onSurface },
+                ]}
+              >
+                Add members
+              </Text>
+
+              {/* Right */}
+              <TouchableOpacity style={styles.headerIcon}>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={size.iconSm}
+                  color={theme.colors.onSurfaceVariant}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Search Bar - FROM SEARCH COMPONENT */}
+            <View style={styles.searchBar}>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  { borderColor: theme.colors.outline },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="magnify"
+                  size={size.inputIcons}
+                  color={theme.colors.onBackground}
+                  style={styles.searchIcon}
+                />
+                <TextInput
+                  ref={inputRef}
+                  value={query}
+                  onChangeText={handleChangeText}
+                  placeholder="Search members"
+                  placeholderTextColor={theme.colors.onBackground}
+                  autoCapitalize="none"
+                  style={[
+                    styles.textInput,
+                    { color: theme.colors.onBackground },
+                  ]}
+                />
+              </View>
+            </View>
+            <View style={styles.resultsContainer}>
+              {!search.trim() ? null :
+                loading && users.length === 0 ? (
+                  <Loader size={size.iconLg} />
+                ) : users.length > 0 ? (
+                  <FlatList
+                    data={users}
+                    keyExtractor={item => item.id.toString()}
+                    renderItem={renderUserItem}
+                    onEndReached={handleEndReached}
+                    onEndReachedThreshold={0.5}
+                    style={styles.userList}
+                  />
+                ) : (
+                  <View style={styles.noResults}>
+                    <Text style={{ color: theme.colors.secondary }}>
+                      No Users Found
+                    </Text>
+                  </View>
+                )
+              }
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.modalButton,
+                { backgroundColor: theme.colors.primary },
+              ]}
+              onPress={() => {
+                setCreateGroupVisible(false);
+                navigation.navigate(routes.CreateGroup);
+              }}
+            >
+              <Text
+                style={[
+                  theme.fonts.titleMedium,
+                  { color: theme.colors.onPrimary },
+                ]}
+                onPress={() => {
+                  setCreateGroupVisible(false);
+                  navigation.navigate(routes.CreateGroup, {
+                    members: selectedUsers,
+                  });
+                }}
+              >
+                Continue
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+};
+
+export default GroupChats;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  section: {
+    marginTop: 10,
+  },
+  optionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 0.6,
+  },
+  icon: {
+    marginRight: 16,
+  },
+  textContainer: {
+    flex: 1,
+  },
+
+  /* ===== Modal Styles ===== */
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    flex: 1,
+    marginTop: 150,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 16,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 0.6,
+  },
+  headerIcon: {
+    width: 32,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+  },
+
+  /* ===== Search Bar Styles (from Search component) ===== */
+  searchBar: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+  },
+  searchIcon: { marginLeft: 8 },
+  textInput: {
+    flex: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+    fontSize: 16,
+  },
+
+  /* ===== Results Container ===== */
+  resultsContainer: {
+    flex: 1,
+    minHeight: 300,
+  },
+  userList: {
+    flex: 1,
+  },
+  noResults: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+
+  /* ===== User Item Styles ===== */
+  userItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+  },
+  imgSm: {
+    height: 50,
+    width: 50,
+    borderRadius: 50,
+  },
+  leftHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerUserNames: {
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+  },
+
+  /* ===== Selected Users Chips ===== */
+  selectedUsersContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 0.6,
+    maxHeight: 80,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+  },
+  chipClose: {
+    marginLeft: 6,
+  },
+
+  /* ===== Modal Footer ===== */
+  modalFooter: {
+    padding: 16,
+    borderTopWidth: 0.6,
+  },
+  nextButton: {
+    borderRadius: 25,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+    borderRadius: 30,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
