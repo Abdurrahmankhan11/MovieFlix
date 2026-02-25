@@ -672,318 +672,318 @@ console.log('%cWelcome to MovieFlix - Your Movie Recommendation System!', 'font-
 
 
 
-// import {
-//   Image,
-//   StyleSheet,
-//   Text,
-//   TouchableOpacity,
-//   View,
-// } from 'react-native';
-// import { useContext, useState, useEffect } from 'react';
-// import { useTheme } from 'react-native-paper';
-// import { useNavigation } from '@react-navigation/native';
-// import OTPTextInput from 'react-native-otp-textinput';
-// import { routes } from '../../navigation/routes/routes';
-// import { AuthContext } from '../../context/AuthContext';
-// import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-// import { size } from '../../constants/size';
-// import BaseUrl from '../../services/api/BaseApi';
-// import { useSnackbar } from '../../context/SnackbarContext';
-// import Loader from '../../components/Loader';
+import {
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useContext, useState, useEffect } from 'react';
+import { useTheme } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
+import OTPTextInput from 'react-native-otp-textinput';
+import { routes } from '../../navigation/routes/routes';
+import { AuthContext } from '../../context/AuthContext';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { size } from '../../constants/size';
+import BaseUrl from '../../services/api/BaseApi';
+import { useSnackbar } from '../../context/SnackbarContext';
+import Loader from '../../components/Loader';
 
-// const OTPVerification = () => {
-//   const theme = useTheme();
-//   const navigation = useNavigation();
-//   const { newRegisteredEmail } = useContext(AuthContext);
-//   const [error, setError] = useState('');
-//   const [loading, setLoading] = useState(false);
-//   const [otp, setOtp] = useState('');
-//   const { showSnackbar } = useSnackbar();
-//   const [timer, setTimer] = useState(60);
-//   const [isTimerActive, setIsTimerActive] = useState(true);
+const OTPVerification = () => {
+  const theme = useTheme();
+  const navigation = useNavigation();
+  const { newRegisteredEmail } = useContext(AuthContext);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [otp, setOtp] = useState('');
+  const { showSnackbar } = useSnackbar();
+  const [timer, setTimer] = useState(60);
+  const [isTimerActive, setIsTimerActive] = useState(true);
 
-//   const handleOTP = async () => {
-//     setLoading(true);
-//     setError('');
+  const handleOTP = async () => {
+    setLoading(true);
+    setError('');
 
-//     const payload = {
-//       email: newRegisteredEmail,
-//       otp: otp,
-//     };
+    const payload = {
+      email: newRegisteredEmail,
+      otp: otp,
+    };
 
-//     try {
-//       const response = await BaseUrl.post(
-//         '/social-media/verification/verify',
-//         payload,
-//       );
-//       if (response.status === 200 || response.status === 201) {
-//         setLoading(false);
-//         showSnackbar('Account verification successful!');
-//         navigation.navigate(routes.ProfileSetup);
-//       } else {
-//         setError(data?.message || 'Failed to verify OTP');
-//         showSnackbar('Verification failed!');
-//       }
-//     } catch (error) {
-//       setError(
-//         error.response.data || 'Something went wrong. Please try again.',
-//       );
-//       showSnackbar('Server error!');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
+    try {
+      const response = await BaseUrl.post(
+        '/social-media/verification/verify',
+        payload,
+      );
+      if (response.status === 200 || response.status === 201) {
+        setLoading(false);
+        showSnackbar('Account verification successful!');
+        navigation.navigate(routes.ProfileSetup);
+      } else {
+        setError(data?.message || 'Failed to verify OTP');
+        showSnackbar('Verification failed!');
+      }
+    } catch (error) {
+      setError(
+        error.response.data || 'Something went wrong. Please try again.',
+      );
+      showSnackbar('Server error!');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-//   const handleResendOtp = async () => {
-//     setLoading(true);
-//     setError('');
+  const handleResendOtp = async () => {
+    setLoading(true);
+    setError('');
 
-//     const payload = {
-//       email: newRegisteredEmail,
-//     };
+    const payload = {
+      email: newRegisteredEmail,
+    };
 
-//     try {
-//       const response = await BaseUrl.post(
-//         '/social-media/verification/sendOtp',
-//         payload,
-//       );
+    try {
+      const response = await BaseUrl.post(
+        '/social-media/verification/sendOtp',
+        payload,
+      );
 
-//       if (response.status === 200 || response.status === 201) {
-//         setTimer(60);
-//         setIsTimerActive(true);
-//         setLoading(false);
-//         showSnackbar('OTP sent again!');
-//       } else {
-//         setError(data?.message || 'Failed to send OTP');
-//         showSnackbar('Failed to send OTP!');
-//       }
-//     } catch (error) {
-//       setError(
-//         error.response.data || 'Something went wrong. Please try again.',
-//       );
-//       showSnackbar('Server error!');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
+      if (response.status === 200 || response.status === 201) {
+        setTimer(60);
+        setIsTimerActive(true);
+        setLoading(false);
+        showSnackbar('OTP sent again!');
+      } else {
+        setError(data?.message || 'Failed to send OTP');
+        showSnackbar('Failed to send OTP!');
+      }
+    } catch (error) {
+      setError(
+        error.response.data || 'Something went wrong. Please try again.',
+      );
+      showSnackbar('Server error!');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-//   useEffect(() => {
-//     let interval;
+  useEffect(() => {
+    let interval;
 
-//     if (isTimerActive && timer > 0) {
-//       interval = setInterval(() => {
-//         setTimer(prev => prev - 1);
-//       }, 1000);
-//     }
+    if (isTimerActive && timer > 0) {
+      interval = setInterval(() => {
+        setTimer(prev => prev - 1);
+      }, 1000);
+    }
 
-//     if (timer === 0) {
-//       setIsTimerActive(false);
-//       clearInterval(interval);
-//     }
+    if (timer === 0) {
+      setIsTimerActive(false);
+      clearInterval(interval);
+    }
 
-//     return () => clearInterval(interval);
-//   }, [timer, isTimerActive]);
+    return () => clearInterval(interval);
+  }, [timer, isTimerActive]);
 
-//   return (
-//     <View
-//       style={[styles.container, { backgroundColor: theme.colors.background }]}
-//     >
-//       <View style={[styles.formView]}>
-//         <Image
-//           source={require('../../assets/images/otp.png')}
-//           style={styles.img}
-//           resizeMode="contain"
-//         />
-//         {error ? (
-//           <View
-//             style={[
-//               {
-//                 backgroundColor: theme.colors.errorContainer,
-//                 borderColor: theme.colors.error,
-//               },
-//               styles.headingError,
-//             ]}
-//           >
-//             <MaterialCommunityIcons
-//               name="alert-circle-outline"
-//               size={size.btnIconSize}
-//               color={theme.colors.error}
-//             />
-//             <Text
-//               style={[
-//                 theme.fonts.titleSmall,
-//                 {
-//                   color: theme.colors.error,
-//                 },
-//                 styles.errorText,
-//               ]}
-//             >
-//               {error}
-//             </Text>
-//           </View>
-//         ) : null}
-//         <Text
-//           style={[
-//             theme.fonts.headlineLarge,
-//             {
-//               color: theme.colors.onBackground,
-//             },
-//             styles.headingMain,
-//           ]}
-//         >
-//           OTP Verification
-//         </Text>
-//         <View style={[styles.emailAddress]}>
-//           <Text
-//             style={[
-//               theme.fonts.bodyMedium,
-//               { color: theme.colors.onBackground },
-//             ]}
-//           >
-//             Enter the OTP sent to{' '}
-//           </Text>
-//           <Text
-//             style={[
-//               theme.fonts.titleMedium,
-//               { color: theme.colors.onBackground },
-//             ]}
-//           >
-//             ***gmail.com
-//           </Text>
-//         </View>
-//         <View style={styles.otpInputContainer}>
-//           <OTPTextInput
-//             ref={e => (otpInput = e)}
-//             handleTextChange={val => setOtp(val)}
-//             inputCount={6}
-//             tintColor={theme.colors.outline}
-//             offTintColor={theme.colors.primary}
-//             textInputStyle={[
-//               {
-//                 color: theme.colors.primary,
-//               },
-//               theme.fonts.titleLarge,
-//             ]}
-//           />
-//         </View>
+  return (
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <View style={[styles.formView]}>
+        <Image
+          source={require('../../assets/images/otp.png')}
+          style={styles.img}
+          resizeMode="contain"
+        />
+        {error ? (
+          <View
+            style={[
+              {
+                backgroundColor: theme.colors.errorContainer,
+                borderColor: theme.colors.error,
+              },
+              styles.headingError,
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="alert-circle-outline"
+              size={size.btnIconSize}
+              color={theme.colors.error}
+            />
+            <Text
+              style={[
+                theme.fonts.titleSmall,
+                {
+                  color: theme.colors.error,
+                },
+                styles.errorText,
+              ]}
+            >
+              {error}
+            </Text>
+          </View>
+        ) : null}
+        <Text
+          style={[
+            theme.fonts.headlineLarge,
+            {
+              color: theme.colors.onBackground,
+            },
+            styles.headingMain,
+          ]}
+        >
+          OTP Verification
+        </Text>
+        <View style={[styles.emailAddress]}>
+          <Text
+            style={[
+              theme.fonts.bodyMedium,
+              { color: theme.colors.onBackground },
+            ]}
+          >
+            Enter the OTP sent to{' '}
+          </Text>
+          <Text
+            style={[
+              theme.fonts.titleMedium,
+              { color: theme.colors.onBackground },
+            ]}
+          >
+            ***gmail.com
+          </Text>
+        </View>
+        <View style={styles.otpInputContainer}>
+          <OTPTextInput
+            ref={e => (otpInput = e)}
+            handleTextChange={val => setOtp(val)}
+            inputCount={6}
+            tintColor={theme.colors.outline}
+            offTintColor={theme.colors.primary}
+            textInputStyle={[
+              {
+                color: theme.colors.primary,
+              },
+              theme.fonts.titleLarge,
+            ]}
+          />
+        </View>
 
-//         <View style={styles.resendOTP}>
-//           <Text style={[theme.fonts.bodyMedium, { color: theme.colors.secondary }]}>
-//             Didn’t you receive the OTP?{' '}
-//           </Text>
+        <View style={styles.resendOTP}>
+          <Text style={[theme.fonts.bodyMedium, { color: theme.colors.secondary }]}>
+            Didn’t you receive the OTP?{' '}
+          </Text>
 
-//           {isTimerActive ? (
-//             <Text style={{ color: theme.colors.primary }}>
-//               {`00:${timer < 10 ? `0${timer}` : timer}`}
-//             </Text>
-//           ) : (
-//             <TouchableOpacity onPress={handleResendOtp}>
-//               <Text
-//                 style={[theme.fonts.titleMedium, { color: theme.colors.primary }]}
-//               >
-//                 Resend OTP
-//               </Text>
-//             </TouchableOpacity>
-//           )}
-//         </View>
+          {isTimerActive ? (
+            <Text style={{ color: theme.colors.primary }}>
+              {`00:${timer < 10 ? `0${timer}` : timer}`}
+            </Text>
+          ) : (
+            <TouchableOpacity onPress={handleResendOtp}>
+              <Text
+                style={[theme.fonts.titleMedium, { color: theme.colors.primary }]}
+              >
+                Resend OTP
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-//         {/* Confirm button */}
-//         <View>
-//           <TouchableOpacity
-//             style={[styles.button, { backgroundColor: theme.colors.primary }]}
-//             onPress={handleOTP}
-//           >
-//             {loading ? (
-//               <View style={styles.loadingContainer}>
-//                 <Loader size={size.btnIconSize} color={theme.colors.onPrimary} />
-//               </View>
-//             ) : (
-//               <Text
-//                 style={[
-//                   theme.fonts.titleMedium,
-//                   { color: theme.colors.onPrimary },
-//                 ]}
-//               >
-//                 Confirm
-//               </Text>
-//             )}
-//           </TouchableOpacity>
-//         </View>
-//       </View>
-//     </View>
-//   );
-// };
+        {/* Confirm button */}
+        <View>
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: theme.colors.primary }]}
+            onPress={handleOTP}
+          >
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <Loader size={size.btnIconSize} color={theme.colors.onPrimary} />
+              </View>
+            ) : (
+              <Text
+                style={[
+                  theme.fonts.titleMedium,
+                  { color: theme.colors.onPrimary },
+                ]}
+              >
+                Confirm
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
 
-// export default OTPVerification;
+export default OTPVerification;
 
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//   },
-//   content: {
-//     flex: 1,
-//     paddingHorizontal: 30,
-//   },
-//   img: {
-//     height: 250,
-//     alignSelf: 'center',
-//   },
-//   formView: {
-//     padding: 15,
-//     paddingVertical: 40,
-//   },
-//   headingMain: {
-//     fontFamily: 'Ubuntu',
-//     fontWeight: 'bold',
-//     textAlign: 'center',
-//   },
-//   emailAddress: {
-//     flexDirection: 'row',
-//     marginTop: 10,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
-//   button: {
-//     marginTop: 15,
-//     paddingVertical: 8,
-//     paddingHorizontal: 30,
-//     borderRadius: 30,
-//     flexDirection: 'row',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   resendEmail: {
-//     alignItems: 'center',
-//     marginTop: 10,
-//   },
-//   resendOTP: {
-//     alignItems: 'center',
-//     marginTop: 10,
-//     justifyContent: 'center',
-//     flexDirection: 'row',
-//   },
-//   otpInputContainer: {
-//     marginVertical: 15,
-//     paddingHorizontal: 30,
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//   },
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 30,
+  },
+  img: {
+    height: 250,
+    alignSelf: 'center',
+  },
+  formView: {
+    padding: 15,
+    paddingVertical: 40,
+  },
+  headingMain: {
+    fontFamily: 'Ubuntu',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  emailAddress: {
+    flexDirection: 'row',
+    marginTop: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  button: {
+    marginTop: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 30,
+    borderRadius: 30,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  resendEmail: {
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  resendOTP: {
+    alignItems: 'center',
+    marginTop: 10,
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  otpInputContainer: {
+    marginVertical: 15,
+    paddingHorizontal: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
-//   headingError: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     borderRadius: 10,
-//     paddingVertical: 10,
-//     paddingHorizontal: 8,
-//     marginVertical: 10,
-//     borderWidth: 1,
-//   },
-//   errorText: {
-//     marginLeft: 10,
-//   },
-//   loadingContainer: {
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     width: '100%',
-//   },
-// });
+  headingError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    marginVertical: 10,
+    borderWidth: 1,
+  },
+  errorText: {
+    marginLeft: 10,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+});
