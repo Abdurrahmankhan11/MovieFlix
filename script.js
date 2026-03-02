@@ -668,3 +668,206 @@ document.querySelectorAll('.movies-row').forEach(row => {
 // Console welcome message
 console.log('%c🎬 MovieFlix', 'font-size: 24px; font-weight: bold; color: #e50914;');
 console.log('%cWelcome to MovieFlix - Your Movie Recommendation System!', 'font-size: 14px; color: #b3b3b3;');
+
+
+
+// import {
+//   StyleSheet,
+//   Text,
+//   View,
+//   FlatList,
+//   TouchableOpacity,
+//   Image,
+// } from 'react-native';
+// import React, { useCallback, useState } from 'react';
+// import { useTheme } from 'react-native-paper';
+// import { useFocusEffect } from '@react-navigation/native';
+// import BaseUrl from '../../services/api/BaseApi';
+// import Loader from '../../components/Loader';
+// import { size } from '../../constants/size';
+// import { useSnackbar } from '../../context/SnackbarContext';
+// import { timestamp } from '../../services/helpers/timestamp';
+// import { useNavigation } from '@react-navigation/native';
+// import { routes } from '../../navigation/routes/routes';
+// import { Buffer } from 'buffer';
+
+
+// const MyGroups = () => {
+//   const theme = useTheme();
+//   const { showSnackbar } = useSnackbar();
+//   const [groups, setGroups] = useState([]);
+//   // const [groupImages, setGroupImages] = useState({});
+//   const [loading, setLoading] = useState(false);
+//   const navigation = useNavigation();
+
+
+//   const fetchGroupImage = async (imageUrl) => {
+//   try {
+//     const response = await BaseUrl.get(`/social-media${imageUrl}`, {
+//       responseType: 'arraybuffer',
+//     });
+
+//     const base64 = Buffer.from(response.data, 'binary').toString('base64');
+//     return `data:image/jpeg;base64,${base64}`;
+//   } catch (error) {
+//     showSnackbar('Error fetching group image!');
+//   }
+// };
+
+//   const fetchAllGroupImages = async groupsList => {
+//     const imageMap = {};
+
+//     await Promise.all(
+//       groupsList.map(async group => {
+//         if (group.image) {
+//           const imageUri = await fetchGroupImage(group.image);
+//           imageMap[group.id] = imageUri;
+//         }
+//       }),
+//     );
+
+//     setGroupImages(imageMap);
+//   };
+
+//  const GetMyGroups = async () => {
+//   setLoading(true);
+//   try {
+//     const response = await BaseUrl.get('/social-media/fetchUserGroups');
+//     const groupList = response?.data?.groupList || [];
+
+//     // Fetch image URI for each group
+//     const updatedGroups = await Promise.all(
+//       groupList.map(async (group) => {
+//         if (group.image) {
+//           const uri = await fetchGroupImage(group.image);
+//           return { ...group, imageUri: uri };
+//         }
+//         return group;
+//       })
+//     );
+
+//     setGroups(updatedGroups);
+//   } catch (error) {
+//     showSnackbar('Failed to fetch groups!');
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+//   useFocusEffect(
+//     useCallback(() => {
+//       GetMyGroups();
+//     }, []),
+//   );
+
+//   return (
+//     <View
+//       style={[styles.container, { backgroundColor: theme.colors.background }]}
+//     >
+//       {loading ? (
+//         <View style={styles.loaderWrap}>
+//           <Loader size={size.iconLg} color={theme.colors.primary} />
+//         </View>
+//       ) : (
+//         <FlatList
+//           data={groups}
+//           keyExtractor={item => item.id.toString()}
+//           contentContainerStyle={{ padding: 16 }}
+//           renderItem={({ item }) => (
+//             <TouchableOpacity
+//               style={[
+//                 styles.card,
+//                 { borderBottomColor: theme.colors.tertiary },
+//               ]}
+//               activeOpacity={0.8}
+//               onPress={() =>
+//                 navigation.navigate(routes.GroupsChattingScreen, {
+//                   groupId: item.id,
+//                   groupName: item.name,
+//                   groupImage: item.imageUri, 
+//                 })
+//               }
+//             >
+
+//               <View style={styles.row}>
+//                <Image
+//   source={
+//     item.imageUri
+//       ? { uri: item.imageUri }
+//       : require('../../assets/images/profileDefault.png')
+//   }
+//   style={styles.groupImg}
+//   resizeMode="cover"
+// />
+
+//                 <View style={{ flex: 1 }}>
+//                   <Text
+//                     style={[
+//                       theme.fonts.titleMedium,
+//                       { color: theme.colors.onBackground },
+//                     ]}
+//                   >
+//                     {item.name}
+//                   </Text>
+
+//                   <View style={styles.metaRow}>
+//                     <Text style={{ color: theme.colors.primary }}>
+//                       {item.groupType}
+//                     </Text>
+
+//                     <Text style={{ color: theme.colors.onSecondary }}>
+//                       {timestamp(item.createdAt)}
+//                     </Text>
+//                   </View>
+//                 </View>
+//               </View>
+//             </TouchableOpacity>
+//           )}
+//           ListEmptyComponent={() => (
+//             <Text
+//               style={{
+//                 textAlign: 'center',
+//                 marginTop: 40,
+//                 color: theme.colors.onBackground,
+//               }}
+//             >
+//               No Groups Found
+//             </Text>
+//           )}
+//         />
+//       )}
+//     </View>
+//   );
+// };
+
+// export default MyGroups;
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//   },
+//   loaderWrap: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   card: {
+//     paddingVertical: 16,
+//     borderBottomWidth: 1,
+//   },
+//   row: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//   },
+//   groupImg: {
+//     width: 50,
+//     height: 50,
+//     borderRadius: 25,
+//     marginRight: 12,
+//   },
+//   metaRow: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     marginTop: 6,
+//   },
+// });
