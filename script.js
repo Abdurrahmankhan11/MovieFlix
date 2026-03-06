@@ -877,447 +877,447 @@ console.log('%cWelcome to MovieFlix - Your Movie Recommendation System!', 'font-
 
 
 
-import { useContext, useEffect, useRef, useState } from 'react';
-import {
-  DeviceEventEmitter,
-  FlatList,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
-} from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { useTheme } from 'react-native-paper';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { size } from '../../constants/size';
-import { FetchSingleFriend } from '../../services/api/FriendsApi';
-import { AuthContext } from '../../context/AuthContext';
-import { w3cwebsocket as W3CWebSocket } from 'websocket';
-import { FetchAllChats } from '../../services/api/ChatsApi';
-import { useSnackbar } from '../../context/SnackbarContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Loader from '../../components/Loader';
-import { routes } from '../../navigation/routes/routes';
-import { useSelector } from 'react-redux';
-import { CHAT_THEMES } from '../../constants/theme/ChattingTheme';
-import { timestamp } from '../../services/helpers/timestamp';
+// import { useContext, useEffect, useRef, useState } from 'react';
+// import {
+//   DeviceEventEmitter,
+//   FlatList,
+//   Keyboard,
+//   KeyboardAvoidingView,
+//   Platform,
+//   StyleSheet,
+//   Text,
+//   TextInput,
+//   TouchableOpacity,
+//   TouchableWithoutFeedback,
+//   View,
+// } from 'react-native';
+// import { useNavigation, useRoute } from '@react-navigation/native';
+// import { useTheme } from 'react-native-paper';
+// import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+// import { size } from '../../constants/size';
+// import { FetchSingleFriend } from '../../services/api/FriendsApi';
+// import { AuthContext } from '../../context/AuthContext';
+// import { w3cwebsocket as W3CWebSocket } from 'websocket';
+// import { FetchAllChats } from '../../services/api/ChatsApi';
+// import { useSnackbar } from '../../context/SnackbarContext';
+// import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// import Loader from '../../components/Loader';
+// import { routes } from '../../navigation/routes/routes';
+// import { useSelector } from 'react-redux';
+// import { CHAT_THEMES } from '../../constants/theme/ChattingTheme';
+// import { timestamp } from '../../services/helpers/timestamp';
 
-const ChattingScreen = () => {
-  const selectedTheme = useSelector(
-    state => state.chatBackground.selectedTheme,
-  );
-  const chatTheme = CHAT_THEMES[selectedTheme] || CHAT_THEMES.default;
-  const route = useRoute();
-  const { id } = route.params;
-  const theme = useTheme();
-  const navigation = useNavigation();
-  const { user } = useContext(AuthContext);
-  const { showSnackbar } = useSnackbar();
-  const insets = useSafeAreaInsets();
-  const [friendDetails, setFriendDetails] = useState({});
-  const [chatText, setChatText] = useState('');
-  const [sendingMessage, setSendingMessage] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [allChats, setAllChats] = useState([]);
-  const [loadingChats, setLoadingChats] = useState(true);
-  const [connectionStatus, setConnectionStatus] = useState('Connecting…');
-  const socketRef = useRef(null);
-  const inputRef = useRef(null);
-  const flatListRef = useRef(null);
-  const friendIdRef = useRef(null);
+// const ChattingScreen = () => {
+//   const selectedTheme = useSelector(
+//     state => state.chatBackground.selectedTheme,
+//   );
+//   const chatTheme = CHAT_THEMES[selectedTheme] || CHAT_THEMES.default;
+//   const route = useRoute();
+//   const { id } = route.params;
+//   const theme = useTheme();
+//   const navigation = useNavigation();
+//   const { user } = useContext(AuthContext);
+//   const { showSnackbar } = useSnackbar();
+//   const insets = useSafeAreaInsets();
+//   const [friendDetails, setFriendDetails] = useState({});
+//   const [chatText, setChatText] = useState('');
+//   const [sendingMessage, setSendingMessage] = useState(false);
+//   const [messages, setMessages] = useState([]);
+//   const [allChats, setAllChats] = useState([]);
+//   const [loadingChats, setLoadingChats] = useState(true);
+//   const [connectionStatus, setConnectionStatus] = useState('Connecting…');
+//   const socketRef = useRef(null);
+//   const inputRef = useRef(null);
+//   const flatListRef = useRef(null);
+//   const friendIdRef = useRef(null);
 
-  const combinedChats = [...allChats, ...messages].sort(
-    (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
-  );
+//   const combinedChats = [...allChats, ...messages].sort(
+//     (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
+//   );
 
-  useEffect(() => {
-    if (friendDetails?.id) {
-      friendIdRef.current = friendDetails.id;
-    }
-  }, [friendDetails]);
+//   useEffect(() => {
+//     if (friendDetails?.id) {
+//       friendIdRef.current = friendDetails.id;
+//     }
+//   }, [friendDetails]);
 
-  useEffect(() => {
-    if (flatListRef.current) {
-      flatListRef.current.scrollToEnd({ animated: true });
-    }
-  }, [combinedChats]);
+//   useEffect(() => {
+//     if (flatListRef.current) {
+//       flatListRef.current.scrollToEnd({ animated: true });
+//     }
+//   }, [combinedChats]);
 
-  const GetSingleFriendDetails = async () => {
-    try {
-      const response = await FetchSingleFriend(id);
-      setFriendDetails(response);
-    } catch (error) {
-      showSnackbar('Error fetching friend details!');
-    }
-  };
+//   const GetSingleFriendDetails = async () => {
+//     try {
+//       const response = await FetchSingleFriend(id);
+//       setFriendDetails(response);
+//     } catch (error) {
+//       showSnackbar('Error fetching friend details!');
+//     }
+//   };
 
-  useEffect(() => {
-    GetSingleFriendDetails();
-  }, [id]);
+//   useEffect(() => {
+//     GetSingleFriendDetails();
+//   }, [id]);
 
-  useEffect(() => {
-    if (id) {
-      GetChats();
-    }
-  }, [id]);
+//   useEffect(() => {
+//     if (id) {
+//       GetChats();
+//     }
+//   }, [id]);
 
-  const GetChats = async () => {
-    setLoadingChats(true);
-    try {
-      const response = await FetchAllChats(id, 20, 0);
+//   const GetChats = async () => {
+//     setLoadingChats(true);
+//     try {
+//       const response = await FetchAllChats(id, 20, 0);
 
-      setAllChats(response.chat || response);
-    } catch (error) {
-      showSnackbar('Error fetching chats!');
-    } finally {
-      setLoadingChats(false);
-    }
-  };
+//       setAllChats(response.chat || response);
+//     } catch (error) {
+//       showSnackbar('Error fetching chats!');
+//     } finally {
+//       setLoadingChats(false);
+//     }
+//   };
 
-  // WebSocket setup
-  useEffect(() => {
-    setConnectionStatus('Connecting…');
-    const currentUserId = user?.id;
+//   // WebSocket setup
+//   useEffect(() => {
+//     setConnectionStatus('Connecting…');
+//     const currentUserId = user?.id;
 
-    const WS_URL = 'ws://72.61.173.6:8000/social-media/ws';
-    const socket = new W3CWebSocket(WS_URL);
-    socket.binaryType = 'arraybuffer';
-    socketRef.current = socket;
+//     const WS_URL = 'ws://72.61.173.6:8000/social-media/ws';
+//     const socket = new W3CWebSocket(WS_URL);
+//     socket.binaryType = 'arraybuffer';
+//     socketRef.current = socket;
 
-    socket.onopen = () => {
-      setConnectionStatus('Connected');
-      const connectFrame = `CONNECT\naccept-version:1.2\nhost:72.61.173.6:8000\nlogin:${currentUserId}\nheart-beat:10000,10000\n\n\0`;
-      socket.send(new TextEncoder().encode(connectFrame));
-    };
+//     socket.onopen = () => {
+//       setConnectionStatus('Connected');
+//       const connectFrame = `CONNECT\naccept-version:1.2\nhost:72.61.173.6:8000\nlogin:${currentUserId}\nheart-beat:10000,10000\n\n\0`;
+//       socket.send(new TextEncoder().encode(connectFrame));
+//     };
 
-    socket.onmessage = msg => {
-      let data;
-      if (msg.data instanceof ArrayBuffer) {
-        data = new TextDecoder('utf-8').decode(msg.data);
-      } else {
-        data = msg.data;
-      }
+//     socket.onmessage = msg => {
+//       let data;
+//       if (msg.data instanceof ArrayBuffer) {
+//         data = new TextDecoder('utf-8').decode(msg.data);
+//       } else {
+//         data = msg.data;
+//       }
 
-      if (data.startsWith('CONNECTED')) {
-        const subscribeFrame = `SUBSCRIBE\nid:sub-0\ndestination:/queue/${currentUserId}\nack:auto\n\n\0`;
-        socket.send(new TextEncoder().encode(subscribeFrame));
-      } else if (data.startsWith('MESSAGE')) {
-        const bodyMatch = data.match(/{.*}/s);
-        if (bodyMatch) {
-          try {
-            const messageObj = JSON.parse(bodyMatch[0]);
-            const friendId = friendIdRef.current;
+//       if (data.startsWith('CONNECTED')) {
+//         const subscribeFrame = `SUBSCRIBE\nid:sub-0\ndestination:/queue/${currentUserId}\nack:auto\n\n\0`;
+//         socket.send(new TextEncoder().encode(subscribeFrame));
+//       } else if (data.startsWith('MESSAGE')) {
+//         const bodyMatch = data.match(/{.*}/s);
+//         if (bodyMatch) {
+//           try {
+//             const messageObj = JSON.parse(bodyMatch[0]);
+//             const friendId = friendIdRef.current;
 
-            const isCurrentChat =
-              friendId &&
-              ((messageObj.senderId === user.id &&
-                messageObj.receiverId === friendId) ||
-                (messageObj.senderId === friendId &&
-                  messageObj.receiverId === user.id));
+//             const isCurrentChat =
+//               friendId &&
+//               ((messageObj.senderId === user.id &&
+//                 messageObj.receiverId === friendId) ||
+//                 (messageObj.senderId === friendId &&
+//                   messageObj.receiverId === user.id));
 
-            if (isCurrentChat) {
-              setMessages(prev => [...prev, messageObj]);
-            }
+//             if (isCurrentChat) {
+//               setMessages(prev => [...prev, messageObj]);
+//             }
 
-            DeviceEventEmitter.emit('newMessage', {
-              userId: messageObj.senderId,
-              content: messageObj.content,
-              timestamp: messageObj.timestamp,
-            });
-          } catch (err) {
-            showSnackbar('Error messaging!');
-          }
-        }
-      } else if (data.startsWith('ERROR')) {
-        setConnectionStatus('Error');
-        showSnackbar('Connection error!');
-      }
-    };
+//             DeviceEventEmitter.emit('newMessage', {
+//               userId: messageObj.senderId,
+//               content: messageObj.content,
+//               timestamp: messageObj.timestamp,
+//             });
+//           } catch (err) {
+//             showSnackbar('Error messaging!');
+//           }
+//         }
+//       } else if (data.startsWith('ERROR')) {
+//         setConnectionStatus('Error');
+//         showSnackbar('Connection error!');
+//       }
+//     };
 
-    socket.onerror = () => setConnectionStatus('Error');
-    socket.onclose = () => setConnectionStatus('Disconnected');
+//     socket.onerror = () => setConnectionStatus('Error');
+//     socket.onclose = () => setConnectionStatus('Disconnected');
 
-    return () => {
-      setConnectionStatus('Disconnected');
-      if (socket.readyState === 1) socket.close();
-    };
-  }, [user?.id]);
+//     return () => {
+//       setConnectionStatus('Disconnected');
+//       if (socket.readyState === 1) socket.close();
+//     };
+//   }, [user?.id]);
 
-  // Send message
-  const sendMessage = () => {
-    if (!chatText.trim() || sendingMessage) return;
-    setSendingMessage(true);
+//   // Send message
+//   const sendMessage = () => {
+//     if (!chatText.trim() || sendingMessage) return;
+//     setSendingMessage(true);
 
-    try {
-      const socket = socketRef.current;
-      const senderId = user?.id;
-      const receiverId = friendDetails?.id;
+//     try {
+//       const socket = socketRef.current;
+//       const senderId = user?.id;
+//       const receiverId = friendDetails?.id;
 
-      if (socket && socket.readyState === 1) {
-        const messageBody = {
-          senderId: parseInt(senderId),
-          receiverId: parseInt(receiverId),
-          content: chatText,
-          timestamp: new Date().toISOString(),
-        };
+//       if (socket && socket.readyState === 1) {
+//         const messageBody = {
+//           senderId: parseInt(senderId),
+//           receiverId: parseInt(receiverId),
+//           content: chatText,
+//           timestamp: new Date().toISOString(),
+//         };
 
-        const sendFrame = `SEND\ndestination:/app/sendMessage\ncontent-type:application/json\n\n${JSON.stringify(
-          messageBody,
-        )}\0`;
+//         const sendFrame = `SEND\ndestination:/app/sendMessage\ncontent-type:application/json\n\n${JSON.stringify(
+//           messageBody,
+//         )}\0`;
 
-        socket.send(new TextEncoder().encode(sendFrame));
-        setMessages(prev => [...prev, messageBody]); // Optimistic update
-        DeviceEventEmitter.emit('newMessage', {
-          userId: receiverId,
-          content: chatText,
-          timestamp: messageBody.timestamp,
-        });
-        setChatText('');
-      } else {
-        setConnectionStatus('Disconnected');
-      }
-    } catch (error) {
-      showSnackbar('Error sending message!');
-    } finally {
-      setSendingMessage(false);
-    }
-  };
+//         socket.send(new TextEncoder().encode(sendFrame));
+//         setMessages(prev => [...prev, messageBody]); // Optimistic update
+//         DeviceEventEmitter.emit('newMessage', {
+//           userId: receiverId,
+//           content: chatText,
+//           timestamp: messageBody.timestamp,
+//         });
+//         setChatText('');
+//       } else {
+//         setConnectionStatus('Disconnected');
+//       }
+//     } catch (error) {
+//       showSnackbar('Error sending message!');
+//     } finally {
+//       setSendingMessage(false);
+//     }
+//   };
 
-  const renderChats = ({ item }) => (
-    <View
-      style={[
-        {
-          alignSelf: item.senderId === user?.id ? 'flex-end' : 'flex-start',
-          backgroundColor:
-            item.senderId === user?.id ? chatTheme.primary : chatTheme.surface,
-        },
-        styles.chats,
-      ]}
-    >
-      <Text
-        style={{
-          color:
-            item.senderId === user?.id
-              ? chatTheme.onPrimary
-              : chatTheme.onSurface,
-        }}
-      >
-        {item.content}
-      </Text>
-      <Text
-        style={[
-          styles.timestampText,
-          {
-            color:
-              item.senderId === user?.id
-                ? theme.colors.onPrimary
-                : theme.colors.secondary,
-            textAlign: 'right',
-          },
-        ]}
-      >
-        {timestamp(item.timestamp)}
-      </Text>
-    </View>
-  );
+//   const renderChats = ({ item }) => (
+//     <View
+//       style={[
+//         {
+//           alignSelf: item.senderId === user?.id ? 'flex-end' : 'flex-start',
+//           backgroundColor:
+//             item.senderId === user?.id ? chatTheme.primary : chatTheme.surface,
+//         },
+//         styles.chats,
+//       ]}
+//     >
+//       <Text
+//         style={{
+//           color:
+//             item.senderId === user?.id
+//               ? chatTheme.onPrimary
+//               : chatTheme.onSurface,
+//         }}
+//       >
+//         {item.content}
+//       </Text>
+//       <Text
+//         style={[
+//           styles.timestampText,
+//           {
+//             color:
+//               item.senderId === user?.id
+//                 ? theme.colors.onPrimary
+//                 : theme.colors.secondary,
+//             textAlign: 'right',
+//           },
+//         ]}
+//       >
+//         {timestamp(item.timestamp)}
+//       </Text>
+//     </View>
+//   );
 
-  const renderStatusIndicator = () => {
-    if (connectionStatus === 'Connecting…') {
-      return <Loader size={size.iconSm} color={theme.colors.onPrimary} />;
-    }
-    const dotColor =
-      connectionStatus === 'Connected' ? chatTheme.success : chatTheme.error;
+//   const renderStatusIndicator = () => {
+//     if (connectionStatus === 'Connecting…') {
+//       return <Loader size={size.iconSm} color={theme.colors.onPrimary} />;
+//     }
+//     const dotColor =
+//       connectionStatus === 'Connected' ? chatTheme.success : chatTheme.error;
 
-    return <View style={[styles.dot, { backgroundColor: dotColor }]} />;
-  };
+//     return <View style={[styles.dot, { backgroundColor: dotColor }]} />;
+//   };
 
-  const Header = () => (
-    <View
-      style={[styles.headerContainer, { backgroundColor: chatTheme.primary }]}
-    >
-      <TouchableOpacity onPress={() => navigation.goBack()}>
-        <MaterialCommunityIcons
-          name="arrow-left"
-          size={size.iconMd}
-          color={chatTheme.onPrimary}
-        />
-      </TouchableOpacity>
+//   const Header = () => (
+//     <View
+//       style={[styles.headerContainer, { backgroundColor: chatTheme.primary }]}
+//     >
+//       <TouchableOpacity onPress={() => navigation.goBack()}>
+//         <MaterialCommunityIcons
+//           name="arrow-left"
+//           size={size.iconMd}
+//           color={chatTheme.onPrimary}
+//         />
+//       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.chatsHeader}
-        onPress={() =>
-          navigation.navigate('newProfile', {
-            id: id, // The 'id' from route.params
-          })
-        }
-      >
-        <Text
-          style={[
-            theme.fonts.titleMedium,
-            styles.itemName,
-            { color: chatTheme.onPrimary },
-          ]}
-        >
-          {friendDetails.firstName} {friendDetails.lastName}
-        </Text>
-        {renderStatusIndicator()}
-      </TouchableOpacity>
+//       <TouchableOpacity
+//         style={styles.chatsHeader}
+//         onPress={() =>
+//           navigation.navigate('newProfile', {
+//             id: id, // The 'id' from route.params
+//           })
+//         }
+//       >
+//         <Text
+//           style={[
+//             theme.fonts.titleMedium,
+//             styles.itemName,
+//             { color: chatTheme.onPrimary },
+//           ]}
+//         >
+//           {friendDetails.firstName} {friendDetails.lastName}
+//         </Text>
+//         {renderStatusIndicator()}
+//       </TouchableOpacity>
 
-      <TouchableOpacity>
-        <MaterialCommunityIcons
-          name="cog"
-          size={size.iconMd}
-          color={chatTheme.onPrimary}
-          onPress={() => navigation.navigate(routes.ChatSetting)}
-        />
-      </TouchableOpacity>
-    </View>
-  );
+//       <TouchableOpacity>
+//         <MaterialCommunityIcons
+//           name="cog"
+//           size={size.iconMd}
+//           color={chatTheme.onPrimary}
+//           onPress={() => navigation.navigate(routes.ChatSetting)}
+//         />
+//       </TouchableOpacity>
+//     </View>
+//   );
 
-  if (loadingChats) {
-    return (
-      <View
-        style={[
-          styles.loaderContainer,
-          { backgroundColor: chatTheme.background },
-        ]}
-      >
-        <Loader size={size.iconLg} color={chatTheme.primary} />
-      </View>
-    );
-  }
+//   if (loadingChats) {
+//     return (
+//       <View
+//         style={[
+//           styles.loaderContainer,
+//           { backgroundColor: chatTheme.background },
+//         ]}
+//       >
+//         <Loader size={size.iconLg} color={chatTheme.primary} />
+//       </View>
+//     );
+//   }
 
-  return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 60 : 0}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View
-          style={[
-            styles.container,
-            {
-              backgroundColor: chatTheme.background,
-              paddingBottom: insets.bottom,
-            },
-          ]}
-        >
-          <Header />
+//   return (
+//     <KeyboardAvoidingView
+//       style={{ flex: 1 }}
+//       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+//       keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 60 : 0}
+//     >
+//       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+//         <View
+//           style={[
+//             styles.container,
+//             {
+//               backgroundColor: chatTheme.background,
+//               paddingBottom: insets.bottom,
+//             },
+//           ]}
+//         >
+//           <Header />
 
-          <FlatList
-            ref={flatListRef}
-            data={combinedChats}
-            renderItem={renderChats}
-            keyExtractor={(_, index) => index.toString()}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: 10, paddingTop: 10 }}
-          />
+//           <FlatList
+//             ref={flatListRef}
+//             data={combinedChats}
+//             renderItem={renderChats}
+//             keyExtractor={(_, index) => index.toString()}
+//             showsVerticalScrollIndicator={false}
+//             keyboardShouldPersistTaps="handled"
+//             contentContainerStyle={{ paddingBottom: 10, paddingTop: 10 }}
+//           />
 
-          <View
-            style={[
-              styles.chatInputBar,
-              {
-                backgroundColor: chatTheme.background,
-                borderTopColor: chatTheme.tertiary,
-              },
-            ]}
-          >
-            <TextInput
-              ref={inputRef}
-              value={chatText}
-              onChangeText={setChatText}
-              placeholder="Type a message..."
-              placeholderTextColor={chatTheme.secondary}
-              style={[
-                styles.input,
-                {
-                  color: chatTheme.onBackground,
-                  borderColor: chatTheme.tertiary,
-                },
-              ]}
-              returnKeyType="send"
-              onSubmitEditing={sendMessage}
-              editable={!sendingMessage}
-            />
+//           <View
+//             style={[
+//               styles.chatInputBar,
+//               {
+//                 backgroundColor: chatTheme.background,
+//                 borderTopColor: chatTheme.tertiary,
+//               },
+//             ]}
+//           >
+//             <TextInput
+//               ref={inputRef}
+//               value={chatText}
+//               onChangeText={setChatText}
+//               placeholder="Type a message..."
+//               placeholderTextColor={chatTheme.secondary}
+//               style={[
+//                 styles.input,
+//                 {
+//                   color: chatTheme.onBackground,
+//                   borderColor: chatTheme.tertiary,
+//                 },
+//               ]}
+//               returnKeyType="send"
+//               onSubmitEditing={sendMessage}
+//               editable={!sendingMessage}
+//             />
 
-            {sendingMessage ? (
-              <Loader
-                size={size.btnIconSize}
-                color={chatTheme.primary}
-                style={styles.sendLoader}
-              />
-            ) : (
-              <TouchableOpacity onPress={sendMessage}>
-                <MaterialCommunityIcons
-                  name="send"
-                  size={size.btnIconSize}
-                  color={
-                    chatText.trim() ? chatTheme.primary : chatTheme.secondary
-                  }
-                />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
-  );
-};
+//             {sendingMessage ? (
+//               <Loader
+//                 size={size.btnIconSize}
+//                 color={chatTheme.primary}
+//                 style={styles.sendLoader}
+//               />
+//             ) : (
+//               <TouchableOpacity onPress={sendMessage}>
+//                 <MaterialCommunityIcons
+//                   name="send"
+//                   size={size.btnIconSize}
+//                   color={
+//                     chatText.trim() ? chatTheme.primary : chatTheme.secondary
+//                   }
+//                 />
+//               </TouchableOpacity>
+//             )}
+//           </View>
+//         </View>
+//       </TouchableWithoutFeedback>
+//     </KeyboardAvoidingView>
+//   );
+// };
 
-export default ChattingScreen;
+// export default ChattingScreen;
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    paddingVertical: 30,
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    elevation: 2,
-    zIndex: 10,
-  },
-  chatInputBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-  },
-  input: {
-    flex: 1,
-    height: 40,
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    marginRight: 10,
-  },
-  sendLoader: { marginHorizontal: 5 },
-  chatsHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dot: { width: 10, height: 10, borderRadius: 5 },
-  chats: {
-    borderRadius: 10,
-    marginVertical: 5,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    marginHorizontal: 10,
-    maxWidth: '80%',
-  },
-  timestampText: {
-    fontSize: 10,
-    marginTop: 4,
-    opacity: 0.8,
-  },
-});
+// const styles = StyleSheet.create({
+//   container: { flex: 1 },
+//   loaderContainer: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   headerContainer: {
+//     flexDirection: 'row',
+//     paddingVertical: 30,
+//     justifyContent: 'space-between',
+//     paddingHorizontal: 20,
+//     alignItems: 'center',
+//     elevation: 2,
+//     zIndex: 10,
+//   },
+//   chatInputBar: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     paddingHorizontal: 10,
+//     paddingVertical: 12,
+//     borderTopWidth: 1,
+//   },
+//   input: {
+//     flex: 1,
+//     height: 40,
+//     borderWidth: 1,
+//     borderRadius: 20,
+//     paddingHorizontal: 15,
+//     marginRight: 10,
+//   },
+//   sendLoader: { marginHorizontal: 5 },
+//   chatsHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+//   dot: { width: 10, height: 10, borderRadius: 5 },
+//   chats: {
+//     borderRadius: 10,
+//     marginVertical: 5,
+//     paddingVertical: 10,
+//     paddingHorizontal: 15,
+//     marginHorizontal: 10,
+//     maxWidth: '80%',
+//   },
+//   timestampText: {
+//     fontSize: 10,
+//     marginTop: 4,
+//     opacity: 0.8,
+//   },
+// });
