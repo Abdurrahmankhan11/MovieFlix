@@ -1321,3 +1321,498 @@ console.log('%cWelcome to MovieFlix - Your Movie Recommendation System!', 'font-
 //     opacity: 0.8,
 //   },
 // });
+
+
+// import { useContext, useEffect, useRef, useState } from 'react';
+// import {
+//   DeviceEventEmitter,
+//   FlatList,
+//   Keyboard,
+//   KeyboardAvoidingView,
+//   Platform,
+//   StyleSheet,
+//   Text,
+//   TextInput,
+//   TouchableOpacity,
+//   TouchableWithoutFeedback,
+//   View,
+// } from 'react-native';
+// import { useNavigation, useRoute } from '@react-navigation/native';
+// import { useTheme } from 'react-native-paper';
+// import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+// import { size } from '../../constants/size';
+// import { AuthContext } from '../../context/AuthContext';
+// import { Client } from '@stomp/stompjs';
+// import { FetchGroupChats } from '../../services/api/ChatsApi';
+// import { useSnackbar } from '../../context/SnackbarContext';
+// import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// import Loader from '../../components/Loader';
+// import { routes } from '../../navigation/routes/routes';
+// import { useSelector } from 'react-redux';
+// import { CHAT_THEMES } from '../../constants/theme/ChattingTheme';
+// import { timestamp } from '../../services/helpers/timestamp';
+// import BaseUrl from '../../services/api/BaseApi';
+
+// const GroupChattingScreen = () => {
+//   const selectedTheme = useSelector(
+//     state => state.chatBackground.selectedTheme,
+//   );
+//   const chatTheme = CHAT_THEMES[selectedTheme] || CHAT_THEMES.default;
+//   const route = useRoute();
+//   const { groupId } = route.params;
+//   const theme = useTheme();
+//   const navigation = useNavigation();
+//   const { user } = useContext(AuthContext);
+//   const { showSnackbar } = useSnackbar();
+//   const insets = useSafeAreaInsets();
+//   const [groupDetails, setGroupDetails] = useState({});
+//   const [chatText, setChatText] = useState('');
+//   const [sendingMessage, setSendingMessage] = useState(false);
+//   const [messages, setMessages] = useState([]);
+//   const [allChats, setAllChats] = useState([]);
+//   const [loadingChats, setLoadingChats] = useState(true);
+//   const [connectionStatus, setConnectionStatus] = useState('Connecting…');
+//   const socketRef = useRef(null);
+//   const inputRef = useRef(null);
+//   const flatListRef = useRef(null);
+//   const groupIdRef = useRef(null);
+
+//   const [pageNumber, setPageNumber] = useState(0);
+//   const [hasMore, setHasMore] = useState(true);
+//   const [loadingMore, setLoadingMore] = useState(false);
+
+//   const combinedChats = [...allChats, ...messages].sort(
+//     (a, b) => new Date(a.sentAt || a.timestamp) - new Date(b.sentAt || b.timestamp),
+//   );
+
+//   useEffect(() => {
+//     if (groupId) {
+//       groupIdRef.current = groupId;
+//       GetGroupDetails();
+//       GetChats(0);
+//     }
+//   }, [groupId]);
+
+//   useEffect(() => {
+//     if (flatListRef.current) {
+//       setTimeout(() => {
+//         flatListRef.current?.scrollToEnd({ animated: true });
+//       }, 100);
+//     }
+//   }, [combinedChats]);
+
+//   const GetGroupDetails = async () => {
+//     try {
+//       const response = await BaseUrl.get(
+//         `/social-media/fetchGroup/${groupId}`
+//       );
+//       setGroupDetails(response.data);
+//     } catch (error) {
+//       showSnackbar('Error fetching group details!');
+//     }
+//   };
+
+//   const GetChats = async (page = 0) => {
+//     if (loadingMore || !hasMore) return;
+
+//     if (page === 0) {
+//       setLoadingChats(true);
+//     } else {
+//       setLoadingMore(true);
+//     }
+
+//     try {
+//       const response = await FetchGroupChats(groupId, 20, page);
+
+//       const newChats = response.messages || [];
+
+//       if (page === 0) {
+//         setAllChats(newChats.reverse());
+//       } else {
+//         setAllChats(prev => [...newChats.reverse(), ...prev]);
+//       }
+
+//       setHasMore(page + 1 < response.totalPages);
+//       setPageNumber(page);
+//     } catch (error) {
+//       showSnackbar('Error fetching chats!');
+//     } finally {
+//       setLoadingChats(false);
+//       setLoadingMore(false);
+//     }
+//   };
+
+//   const loadMoreChats = () => {
+//     if (hasMore && !loadingMore) {
+//       GetChats(pageNumber + 1);
+//     }
+//   };
+
+//   // WebSocket setup
+//   useEffect(() => {
+//     setConnectionStatus('Connecting…');
+//     const currentUserId = user?.id;
+
+//     const client = new Client({
+//       webSocketFactory: () => new WebSocket('wss://7rgt77q5-8080.inc1.devtunnels.ms/social-media/ws'),
+//       reconnectDelay: 5000,
+//       heartbeatIncoming: 4000,
+//       heartbeatOutgoing: 4000,
+//     });
+
+//     client.onConnect = () => {
+//       setConnectionStatus('Connected');
+
+//       // Subscribe to group messages
+//       client.subscribe(`/topic/group/${groupId}`, message => {
+//         const body = JSON.parse(message.body);
+//         const currentGroupId = groupIdRef.current;
+
+//         if (body.groupId === currentGroupId) {
+//           setAllChats(prev => [...prev, body]);
+//         }
+
+//         DeviceEventEmitter.emit('newGroupMessage', {
+//           groupId: body.groupId,
+//           senderId: body.senderId,
+//           content: body.content,
+//           senderName: body.senderName,
+//           timestamp: body.sentAt,
+//         });
+//       });
+//     };
+
+//     client.onStompError = (frame) => {
+//       setConnectionStatus('Error');
+//       showSnackbar('Connection error!');
+//     };
+
+//     client.onWebSocketClose = () => {
+//       setConnectionStatus('Disconnected');
+//     };
+
+//     client.activate();
+//     socketRef.current = client;
+
+//     return () => {
+//       setConnectionStatus('Disconnected');
+//       if (client) {
+//         client.deactivate();
+//       }
+//     };
+//   }, [user?.id, groupId]);
+
+//   // Send message
+//   const sendMessage = () => {
+//     if (!chatText.trim() || sendingMessage) return;
+//     setSendingMessage(true);
+
+//     try {
+//       const client = socketRef.current;
+//       const senderId = user?.id;
+
+//       if (client && client.connected) {
+//         const messageBody = {
+//           groupId: parseInt(groupId),
+//           senderId: parseInt(senderId),
+//           content: chatText,
+//         };
+
+//         client.publish({
+//           destination: '/app/sendGroupMessage',
+//           body: JSON.stringify(messageBody),
+//         });
+
+//         // Optimistic update
+//         setMessages(prev => [...prev, {
+//           ...messageBody,
+//           senderName: user?.firstName + ' ' + user?.lastName,
+//           sentAt: new Date().toISOString()
+//         }]);
+
+//         DeviceEventEmitter.emit('newGroupMessage', {
+//           groupId: parseInt(groupId),
+//           senderId: parseInt(senderId),
+//           content: chatText,
+//           senderName: user?.firstName + ' ' + user?.lastName,
+//           timestamp: new Date().toISOString(),
+//         });
+//         setChatText('');
+//       } else {
+//         setConnectionStatus('Disconnected');
+//       }
+//     } catch (error) {
+//       showSnackbar('Error sending message!');
+//     } finally {
+//       setSendingMessage(false);
+//     }
+//   };
+
+//   const renderChats = ({ item }) => (
+//     <View
+//       style={[
+//         {
+//           alignSelf: item.senderId === user?.id ? 'flex-end' : 'flex-start',
+//           backgroundColor:
+//             item.senderId === user?.id ? chatTheme.primary : chatTheme.surface,
+//         },
+//         styles.chats,
+//       ]}
+//     >
+//       {item.senderId !== user?.id && (
+//         <Text
+//           style={{
+//             color: theme.colors.primary,
+//             fontSize: 12,
+//             fontWeight: 'bold',
+//             marginBottom: 4,
+//           }}
+//         >
+//           {item.senderName}
+//         </Text>
+//       )}
+//       <Text
+//         style={{
+//           color:
+//             item.senderId === user?.id
+//               ? chatTheme.onPrimary
+//               : chatTheme.onSurface,
+//         }}
+//       >
+//         {item.content}
+//       </Text>
+//       <Text
+//         style={[
+//           styles.timestampText,
+//           {
+//             color:
+//               item.senderId === user?.id
+//                 ? theme.colors.onPrimary
+//                 : theme.colors.secondary,
+//             textAlign: 'right',
+//           },
+//         ]}
+//       >
+//         {timestamp(item.sentAt || item.timestamp)}
+//       </Text>
+//     </View>
+//   );
+
+//   const renderStatusIndicator = () => {
+//     if (connectionStatus === 'Connecting…') {
+//       return <Loader size={size.iconSm} color={theme.colors.onPrimary} />;
+//     }
+//     const dotColor =
+//       connectionStatus === 'Connected' ? chatTheme.success : chatTheme.error;
+
+//     return <View style={[styles.dot, { backgroundColor: dotColor }]} />;
+//   };
+
+//   const Header = () => (
+//     <View
+//       style={[styles.headerContainer, { backgroundColor: chatTheme.primary }]}
+//     >
+//       <TouchableOpacity onPress={() => navigation.goBack()}>
+//         <MaterialCommunityIcons
+//           name="arrow-left"
+//           size={size.iconMd}
+//           color={chatTheme.onPrimary}
+//         />
+//       </TouchableOpacity>
+
+//       <TouchableOpacity
+//         style={styles.chatsHeader}
+//         onPress={() =>
+//           navigation.navigate(routes.GroupFeeds, {
+//             groupId: groupId,
+//           })
+//         }
+//       >
+//         <Text
+//           style={[
+//             theme.fonts.titleMedium,
+//             styles.itemName,
+//             { color: chatTheme.onPrimary },
+//           ]}
+//         >
+//           {groupDetails.name || 'Group Chat'}
+//         </Text>
+//         {renderStatusIndicator()}
+//       </TouchableOpacity>
+
+//       <TouchableOpacity>
+//         <MaterialCommunityIcons
+//           name="dots-vertical"
+//           size={size.iconMd}
+//           color={chatTheme.onPrimary}
+//         />
+//       </TouchableOpacity>
+//     </View>
+//   );
+
+//   if (loadingChats) {
+//     return (
+//       <View
+//         style={[
+//           styles.loaderContainer,
+//           { backgroundColor: chatTheme.background },
+//         ]}
+//       >
+//         <Loader size={size.iconLg} color={chatTheme.primary} />
+//       </View>
+//     );
+//   }
+
+//   return (
+//     <KeyboardAvoidingView
+//       style={{ flex: 1 }}
+//       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+//       keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 60 : 0}
+//     >
+//       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+//         <View
+//           style={[
+//             styles.container,
+//             {
+//               backgroundColor: chatTheme.background,
+//               paddingBottom: insets.bottom,
+//             },
+//           ]}
+//         >
+//           <Header />
+
+//           <FlatList
+//             ref={flatListRef}
+//             data={combinedChats}
+//             renderItem={renderChats}
+//             keyExtractor={(item, index) =>
+//               item?.id ? item.id.toString() : index.toString()
+//             }
+//             maintainVisibleContentPosition={{
+//               minIndexForVisible: 1,
+//             }}
+//             onScroll={({ nativeEvent }) => {
+//               if (nativeEvent.contentOffset.y <= 50) {
+//                 loadMoreChats();
+//               }
+//             }}
+//             scrollEventThrottle={16}
+//             ListHeaderComponent={
+//               loadingMore ? (
+//                 <View
+//                   style={{
+//                     paddingVertical: 15,
+//                     alignItems: 'center',
+//                     justifyContent: 'center',
+//                   }}
+//                 >
+//                   <Loader size={size.iconSm} color={chatTheme.primary} />
+//                 </View>
+//               ) : null
+//             }
+//           />
+
+//           <View
+//             style={[
+//               styles.chatInputBar,
+//               {
+//                 backgroundColor: chatTheme.background,
+//                 borderTopColor: chatTheme.tertiary,
+//               },
+//             ]}
+//           >
+//             <TextInput
+//               ref={inputRef}
+//               value={chatText}
+//               onChangeText={setChatText}
+//               placeholder="Type a message..."
+//               placeholderTextColor={chatTheme.secondary}
+//               style={[
+//                 styles.input,
+//                 {
+//                   color: chatTheme.onBackground,
+//                   borderColor: chatTheme.tertiary,
+//                 },
+//               ]}
+//               returnKeyType="send"
+//               onSubmitEditing={sendMessage}
+//               editable={!sendingMessage}
+//             />
+
+//             {sendingMessage ? (
+//               <Loader
+//                 size={size.btnIconSize}
+//                 color={chatTheme.primary}
+//                 style={styles.sendLoader}
+//               />
+//             ) : (
+//               <TouchableOpacity onPress={sendMessage}>
+//                 <MaterialCommunityIcons
+//                   name="send"
+//                   size={size.btnIconSize}
+//                   color={
+//                     chatText.trim() ? chatTheme.primary : chatTheme.secondary
+//                   }
+//                 />
+//               </TouchableOpacity>
+//             )}
+//           </View>
+//         </View>
+//       </TouchableWithoutFeedback>
+//     </KeyboardAvoidingView>
+//   );
+// };
+
+// export default GroupChattingScreen;
+
+// const styles = StyleSheet.create({
+//   container: { flex: 1 },
+//   loaderContainer: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   headerContainer: {
+//     flexDirection: 'row',
+//     paddingVertical: 30,
+//     justifyContent: 'space-between',
+//     paddingHorizontal: 20,
+//     alignItems: 'center',
+//     elevation: 2,
+//     zIndex: 10,
+//   },
+//   chatInputBar: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     paddingHorizontal: 10,
+//     paddingVertical: 12,
+//     borderTopWidth: 1,
+//   },
+//   input: {
+//     flex: 1,
+//     height: 40,
+//     borderWidth: 1,
+//     borderRadius: 20,
+//     paddingHorizontal: 15,
+//     marginRight: 10,
+//   },
+//   sendLoader: { marginHorizontal: 5 },
+//   chatsHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+//   dot: { width: 10, height: 10, borderRadius: 5 },
+//   chats: {
+//     borderRadius: 10,
+//     marginVertical: 5,
+//     paddingVertical: 10,
+//     paddingHorizontal: 15,
+//     marginHorizontal: 10,
+//     maxWidth: '80%',
+//   },
+//   timestampText: {
+//     fontSize: 10,
+//     marginTop: 4,
+//     opacity: 0.8,
+//   },
+//   itemName: {
+//     flex: 1,
+//   },
+// });
