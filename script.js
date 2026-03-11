@@ -1337,6 +1337,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -1353,19 +1354,47 @@ import { CHAT_THEMES } from '../../constants/theme/ChattingTheme';
 import { timestamp } from '../../services/helpers/timestamp';
 import BaseUrl from '../../services/api/BaseApi';
 
+import { useContext, useEffect, useRef, useState, useCallback } from 'react';
+import {
+  DeviceEventEmitter,
+  FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTheme } from 'react-native-paper';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSelector } from 'react-redux';
+import { size } from '../../constants/size';
+import BaseUrl from '../../services/api/BaseApi';
+import { FetchGroupChats } from '../../services/api/ChatsApi';
+import { AuthContext } from '../../context/AuthContext';
+import { w3cwebsocket as W3CWebSocket } from 'websocket';
+import { useSnackbar } from '../../context/SnackbarContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Loader from '../../components/Loader';
+import { CHAT_THEMES } from '../../constants/theme/ChattingTheme';
+import { timestamp } from '../../services/helpers/timestamp';
+import { routes } from '../../navigation/routes/routes';
+
 const GroupChattingScreen = () => {
-  const selectedTheme = useSelector(
-    state => state.chatBackground.selectedTheme,
-  );
-  const chatTheme = CHAT_THEMES[selectedTheme] || CHAT_THEMES.default;
   const route = useRoute();
   const { groupId } = route.params;
-  const theme = useTheme();
+
   const navigation = useNavigation();
+  const theme = useTheme();
   const { user } = useContext(AuthContext);
   const { showSnackbar } = useSnackbar();
   const insets = useSafeAreaInsets();
-  const [groupDetails, setGroupDetails] = useState({});
+
+  const [groupData, setGroupData] = useState({});
   const [chatText, setChatText] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -1375,23 +1404,19 @@ const GroupChattingScreen = () => {
   const socketRef = useRef(null);
   const inputRef = useRef(null);
   const flatListRef = useRef(null);
-  const groupIdRef = useRef(null);
 
   const [pageNumber, setPageNumber] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
+  const selectedTheme = useSelector(
+    state => state.chatBackground.selectedTheme,
+  );
+  const chatTheme = CHAT_THEMES[selectedTheme] || CHAT_THEMES.default;
+
   const combinedChats = [...allChats, ...messages].sort(
     (a, b) => new Date(a.sentAt || a.timestamp) - new Date(b.sentAt || b.timestamp),
   );
-
-  useEffect(() => {
-    if (groupId) {
-      groupIdRef.current = groupId;
-      GetGroupDetails();
-      GetChats(0);
-    }
-  }, [groupId]);
 
   useEffect(() => {
     if (flatListRef.current) {
@@ -1401,18 +1426,23 @@ const GroupChattingScreen = () => {
     }
   }, [combinedChats]);
 
-  const GetGroupDetails = async () => {
+  const fetchGroupDetails = useCallback(async () => {
     try {
-      const response = await BaseUrl.get(
-        `/social-media/fetchGroup/${groupId}`
-      );
-      setGroupDetails(response.data);
+      const response = await BaseUrl.get(`/social-media/fetchGroup/${groupId}`);
+      setGroupData(response.data);
     } catch (error) {
       showSnackbar('Error fetching group details!');
     }
-  };
+  }, [groupId, showSnackbar]);
 
-  const GetChats = async (page = 0) => {
+  useEffect(() => {
+    if (groupId) {
+      fetchGroupDetails();
+      getChats(0);
+    }
+  }, [groupId, fetchGroupDetails]);
+
+  const getChats = async (page = 0) => {
     if (loadingMore || !hasMore) return;
 
     if (page === 0) {
@@ -1423,8 +1453,9 @@ const GroupChattingScreen = () => {
 
     try {
       const response = await FetchGroupChats(groupId, 20, page);
-
+      console.log('getChats response', response);
       const newChats = response.messages || [];
+      console.log('parsed newChats', newChats.length, newChats);
 
       if (page === 0) {
         setAllChats(newChats.reverse());
@@ -1432,10 +1463,11 @@ const GroupChattingScreen = () => {
         setAllChats(prev => [...newChats.reverse(), ...prev]);
       }
 
-      setHasMore(page + 1 < response.totalPages);
+      setHasMore(page + 1 < (response.totalPages || 0));
       setPageNumber(page);
     } catch (error) {
-      showSnackbar('Error fetching chats!');
+      console.error('getChats error', error);
+      showSnackbar('Error fetching group chats!');
     } finally {
       setLoadingChats(false);
       setLoadingMore(false);
@@ -1444,104 +1476,134 @@ const GroupChattingScreen = () => {
 
   const loadMoreChats = () => {
     if (hasMore && !loadingMore) {
-      GetChats(pageNumber + 1);
+      getChats(pageNumber + 1);
     }
   };
 
-  // WebSocket setup
+  // websocket setup
   useEffect(() => {
     setConnectionStatus('Connecting…');
     const currentUserId = user?.id;
+    const WS_URL = 'wss://7rgt77q5-8080.inc1.devtunnels.ms/social-media/ws';
+    const socket = new W3CWebSocket(WS_URL);
+    socket.binaryType = 'arraybuffer';
+    socketRef.current = socket;
 
-    const client = new Client({
-      webSocketFactory: () => new WebSocket('wss://7rgt77q5-8080.inc1.devtunnels.ms/social-media/ws'),
-      reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
-    });
-
-    client.onConnect = () => {
+    socket.onopen = () => {
+      console.log('group socket opened');
       setConnectionStatus('Connected');
+      const connectFrame = `CONNECT\naccept-version:1.2\nhost:7rgt77q5-8080.inc1.devtunnels.ms\nlogin:${currentUserId}\nheart-beat:10000,10000\n\n\0`;
+      console.log('> connectFrame', connectFrame);
+      socket.send(new TextEncoder().encode(connectFrame));
+    };
 
-      // Subscribe to group messages
-      client.subscribe(`/topic/group/${groupId}`, message => {
-        const body = JSON.parse(message.body);
-        const currentGroupId = groupIdRef.current;
+    socket.onmessage = msg => {
+      let data;
+      if (msg.data instanceof ArrayBuffer) {
+        data = new TextDecoder('utf-8').decode(msg.data);
+      } else {
+        data = msg.data;
+      }
 
-        if (body.groupId === currentGroupId) {
-          setAllChats(prev => [...prev, body]);
+      if (data.startsWith('CONNECTED')) {
+        const subscribeFrame = `SUBSCRIBE\nid:sub-0\ndestination:/topic/group/${groupId}\nack:auto\n\n\0`;
+        console.log('> subscribing', subscribeFrame);
+        socket.send(new TextEncoder().encode(subscribeFrame));
+      } else if (data.startsWith('MESSAGE')) {
+        console.log('websocket raw MESSAGE frame', data);
+        const bodyMatch = data.match(/{.*}/s);
+        if (bodyMatch) {
+          try {
+            const messageObj = JSON.parse(bodyMatch[0]);
+            console.log('parsed messageObj', messageObj);
+            if (messageObj.groupId === groupId) {
+              setAllChats(prev => [...prev, messageObj]);
+            }
+            DeviceEventEmitter.emit('newMessage', {
+              userId: messageObj.senderId,
+              content: messageObj.content,
+              timestamp: messageObj.sentAt || messageObj.timestamp,
+            });
+          } catch (err) {
+            console.error('Error parsing incoming message', err);
+            showSnackbar('Error parsing incoming message!');
+          }
         }
-
-        DeviceEventEmitter.emit('newGroupMessage', {
-          groupId: body.groupId,
-          senderId: body.senderId,
-          content: body.content,
-          senderName: body.senderName,
-          timestamp: body.sentAt,
-        });
-      });
+      } else if (data.startsWith('ERROR')) {
+        setConnectionStatus('Error');
+        showSnackbar('Connection error!');
+      }
     };
 
-    client.onStompError = (frame) => {
-      setConnectionStatus('Error');
-      showSnackbar('Connection error!');
-    };
-
-    client.onWebSocketClose = () => {
-      setConnectionStatus('Disconnected');
-    };
-
-    client.activate();
-    socketRef.current = client;
+    socket.onerror = () => setConnectionStatus('Error');
+    socket.onclose = () => setConnectionStatus('Disconnected');
 
     return () => {
       setConnectionStatus('Disconnected');
-      if (client) {
-        client.deactivate();
-      }
+      if (socket.readyState === 1) socket.close();
     };
   }, [user?.id, groupId]);
 
-  // Send message
   const sendMessage = () => {
     if (!chatText.trim() || sendingMessage) return;
     setSendingMessage(true);
 
     try {
-      const client = socketRef.current;
+      const socket = socketRef.current;
       const senderId = user?.id;
+      const numericGroupId = parseInt(groupId, 10);
+      if (isNaN(numericGroupId)) {
+        console.warn('Invalid groupId', groupId);
+        showSnackbar('Invalid group identifier');
+        setSendingMessage(false);
+        return;
+      }
 
-      if (client && client.connected) {
+      console.log('> sendMessage', {
+        connectionStatus,
+        readyState: socket?.readyState,
+        numericGroupId,
+        senderId,
+        chatText,
+      });
+
+      if (socket && socket.readyState === 1) {
         const messageBody = {
-          groupId: parseInt(groupId),
-          senderId: parseInt(senderId),
+          groupId: numericGroupId,
+          senderId: parseInt(senderId, 10),
           content: chatText,
         };
 
-        client.publish({
-          destination: '/app/sendGroupMessage',
-          body: JSON.stringify(messageBody),
-        });
+        const sendFrame = `SEND\ndestination:/app/sendGroupMessage\ncontent-type:application/json\n\n${JSON.stringify(
+          messageBody,
+        )}\0`;
 
-        // Optimistic update
-        setMessages(prev => [...prev, {
-          ...messageBody,
-          senderName: user?.firstName + ' ' + user?.lastName,
-          sentAt: new Date().toISOString()
-        }]);
+        console.log('> sending frame', sendFrame);
+        socket.send(new TextEncoder().encode(sendFrame));
 
-        DeviceEventEmitter.emit('newGroupMessage', {
-          groupId: parseInt(groupId),
-          senderId: parseInt(senderId),
+        // persist via REST in case WS handler isn't saving
+        (async () => {
+          try {
+            const resp = await BaseUrl.post( '/social-media/groupMessage/sendGroupMessage', messageBody);
+            console.log('HTTP save response', resp.data);
+          } catch (e) {
+            console.error('HTTP save error', e?.response || e);
+          }
+        })();
+
+        setMessages(prev => [...prev, messageBody]);
+        DeviceEventEmitter.emit('newMessage', {
+          userId: senderId,
           content: chatText,
-          senderName: user?.firstName + ' ' + user?.lastName,
           timestamp: new Date().toISOString(),
         });
         setChatText('');
       } else {
         setConnectionStatus('Disconnected');
+        showSnackbar('Not connected to chat server');
       }
     } catch (error) {
+      console.error('sendMessage error', error);
       showSnackbar('Error sending message!');
     } finally {
       setSendingMessage(false);
@@ -1562,15 +1624,15 @@ const GroupChattingScreen = () => {
       {item.senderId !== user?.id && (
         <Text
           style={{
-            color: theme.colors.primary,
-            fontSize: 12,
-            fontWeight: 'bold',
+            color: chatTheme.onSurface,
+            fontWeight: '600',
             marginBottom: 4,
           }}
         >
-          {item.senderName}
+          {item.senderName || 'Unknown'}
         </Text>
       )}
+
       <Text
         style={{
           color:
@@ -1624,7 +1686,7 @@ const GroupChattingScreen = () => {
         style={styles.chatsHeader}
         onPress={() =>
           navigation.navigate(routes.GroupFeeds, {
-            groupId: groupId,
+            groupId,
           })
         }
       >
@@ -1635,16 +1697,17 @@ const GroupChattingScreen = () => {
             { color: chatTheme.onPrimary },
           ]}
         >
-          {groupDetails.name || 'Group Chat'}
+          {groupData.name || 'Group Chat'}
         </Text>
         {renderStatusIndicator()}
       </TouchableOpacity>
 
       <TouchableOpacity>
         <MaterialCommunityIcons
-          name="dots-vertical"
+          name="cog"
           size={size.iconMd}
           color={chatTheme.onPrimary}
+          onPress={() => navigation.navigate(routes.GroupFeeds, { groupId })}
         />
       </TouchableOpacity>
     </View>
@@ -1813,6 +1876,6 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   itemName: {
-    flex: 1,
+    fontWeight: 'bold',
   },
 });
