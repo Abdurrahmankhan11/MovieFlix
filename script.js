@@ -2372,3 +2372,501 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+
+
+// import { useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
+// import {
+//   DeviceEventEmitter,
+//   FlatList,
+//   Keyboard,
+//   KeyboardAvoidingView,
+//   Platform,
+//   StyleSheet,
+//   Text,
+//   TextInput,
+//   TouchableOpacity,
+//   TouchableWithoutFeedback,
+//   View,
+// } from 'react-native';
+// import { useNavigation, useRoute } from '@react-navigation/native';
+// import { useTheme } from 'react-native-paper';
+// import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+// import { useSelector } from 'react-redux';
+// import { size } from '../../constants/size';
+// import BaseUrl from '../../services/api/BaseApi';
+// import { FetchGroupChats } from '../../services/api/ChatsApi';
+// import { AuthContext } from '../../context/AuthContext';
+// import { w3cwebsocket as W3CWebSocket } from 'websocket';
+// import { useSnackbar } from '../../context/SnackbarContext';
+// import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// import Loader from '../../components/Loader';
+// import { CHAT_THEMES } from '../../constants/theme/ChattingTheme';
+// import { timestamp } from '../../services/helpers/timestamp';
+// import { routes } from '../../navigation/routes/routes';
+
+// const GroupChattingScreen = () => {
+//   const route = useRoute();
+//   const { groupId } = route.params;
+
+//   const navigation = useNavigation();
+//   const theme = useTheme();
+//   const { user } = useContext(AuthContext);
+//   const { showSnackbar } = useSnackbar();
+//   const insets = useSafeAreaInsets();
+
+//   const [groupData, setGroupData] = useState({});
+//   const [chatText, setChatText] = useState('');
+//   const [sendingMessage, setSendingMessage] = useState(false);
+//   const [messages, setMessages] = useState([]);
+//   const [allChats, setAllChats] = useState([]);
+//   const [loadingChats, setLoadingChats] = useState(true);
+//   const [connectionStatus, setConnectionStatus] = useState('Connecting…');
+//   const socketRef = useRef(null);
+//   const inputRef = useRef(null);
+//   const flatListRef = useRef(null);
+
+//   const [pageNumber, setPageNumber] = useState(0);
+//   const [hasMore, setHasMore] = useState(true);
+//   const [loadingMore, setLoadingMore] = useState(false);
+
+//   const selectedTheme = useSelector(
+//     state => state.chatBackground.selectedTheme,
+//   );
+//   const chatTheme = CHAT_THEMES[selectedTheme] || CHAT_THEMES.default;
+
+//   const combinedChats = useMemo(() => [...allChats, ...messages].sort(
+//     (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
+//   ), [allChats, messages]);
+
+//   useEffect(() => {
+//     if (flatListRef.current) {
+//       setTimeout(() => {
+//         flatListRef.current?.scrollToEnd({ animated: true });
+//       }, 100);
+//     }
+//   }, [combinedChats.length]);
+
+//   const fetchGroupDetails = useCallback(async () => {
+//     try {
+//       const response = await BaseUrl.get(`/social-media/fetchGroup/${groupId}`);
+//       setGroupData(response.data);
+//     } catch (error) {
+//       showSnackbar('Error fetching group details!');
+//     }
+//   }, [groupId, showSnackbar]);
+
+//   useEffect(() => {
+//     if (groupId) {
+//       fetchGroupDetails();
+//       getChats(0);
+//     }
+//   }, [groupId, fetchGroupDetails]);
+
+//   const getChats = async (page = 0) => {
+//     if (loadingMore || !hasMore) return;
+
+//     if (page === 0) {
+//       setLoadingChats(true);
+//     } else {
+//       setLoadingMore(true);
+//     }
+
+//     try {
+//       const response = await FetchGroupChats(groupId, 20, page);
+//       const newChats = response.messages || [];
+
+//       if (page === 0) {
+//         setAllChats(newChats.reverse());
+//       } else {
+//         setAllChats(prev => [...newChats.reverse(), ...prev]);
+//       }
+
+//       setHasMore(page + 1 < (response.totalPages || 0));
+//       setPageNumber(page);
+//     } catch (error) {
+//       showSnackbar('Error fetching group chats!');
+//     } finally {
+//       setLoadingChats(false);
+//       setLoadingMore(false);
+//     }
+//   };
+
+//   const loadMoreChats = () => {
+//     if (hasMore && !loadingMore) {
+//       getChats(pageNumber + 1);
+//     }
+//   };
+
+//   // websocket setup
+//   useEffect(() => {
+//     setConnectionStatus('Connecting…');
+//     const currentUserId = user?.id;
+//     // const WS_URL = 'wss://7rgt77q5-8080.inc1.devtunnels.ms/social-media/ws';
+//     const WS_URL = 'ws://72.61.173.6:8000/social-media/ws';
+//     const socket = new W3CWebSocket(WS_URL);
+//     socket.binaryType = 'arraybuffer';
+//     socketRef.current = socket;
+
+//     socket.onopen = () => {
+//       setConnectionStatus('Connected');
+//       // const connectFrame = `CONNECT\naccept-version:1.2\nhost:7rgt77q5-8080.inc1.devtunnels.ms\nlogin:${currentUserId}\nheart-beat:10000,10000\n\n\0`;
+//       const connectFrame = `CONNECT\naccept-version:1.2\nhost:72.61.173.6:8000\nlogin:${currentUserId}\nheart-beat:10000,10000\n\n\0`;
+//       socket.send(new TextEncoder().encode(connectFrame));
+//     };
+
+//     socket.onmessage = msg => {
+//       let data;
+//       if (msg.data instanceof ArrayBuffer) {
+//         data = new TextDecoder('utf-8').decode(msg.data);
+//       } else {
+//         data = msg.data;
+//       }
+
+//       if (data.startsWith('CONNECTED')) {
+//         // const subscribeFrame = `SUBSCRIBE\nid:sub-0\ndestination:/topic/group/${groupId}\nack:auto\n\n\0`;
+//         const subscribeFrame = `SUBSCRIBE\nid:sub-0\ndestination:/queue/${groupId}\nack:auto\n\n\0`;
+//         socket.send(new TextEncoder().encode(subscribeFrame));
+//       } else if (data.startsWith('MESSAGE')) {
+//         const bodyMatch = data.match(/{.*}/s);
+//         if (bodyMatch) {
+//           try {
+//             const messageObj = JSON.parse(bodyMatch[0]);
+//             if (messageObj.groupId === groupId && !allChats.some(m => m.id === messageObj.id)) {
+//               setAllChats(prev => [...prev, messageObj]);
+//             }
+//             DeviceEventEmitter.emit('newMessage', {
+//               userId: messageObj.senderId,
+//               content: messageObj.content,
+//               timestamp: messageObj.timestamp,
+//             });
+//           } catch (err) {
+//             showSnackbar('Error messaging!');
+//           }
+//         }
+//       } else if (data.startsWith('ERROR')) {
+//         setConnectionStatus('Error');
+//         showSnackbar('Connection error!');
+//       }
+//     };
+
+//     socket.onerror = () => setConnectionStatus('Error');
+//     socket.onclose = () => setConnectionStatus('Disconnected');
+
+//     return () => {
+//       setConnectionStatus('Disconnected');
+//       if (socket.readyState === 1) socket.close();
+//     };
+//   }, [user?.id]);
+
+//   const sendMessage = () => {
+//     if (!chatText.trim() || sendingMessage) return;
+//     setSendingMessage(true);
+
+//     try {
+//       const socket = socketRef.current;
+//       const senderId = user?.id;
+//       const numericGroupId = parseInt(groupId, 10);
+
+//       if (socket && socket.readyState === 1) {
+//         const messageBody = {
+//           groupId: numericGroupId,
+//           senderId: parseInt(senderId, 10),
+//           content: chatText,
+//           timestamp: new Date().toISOString(),
+//         };
+
+// //         const sendFrame = `SEND
+// // destination:/app/sendGroupMessage
+// // content-type:application/json
+
+// // ${JSON.stringify(messageBody)}\0`;
+// const sendFrame = `SEND\ndestination:/app/sendMessage\ncontent-type:application/json\n\n${JSON.stringify(
+//           messageBody,
+//         )}\0`;
+
+//         socket.send(new TextEncoder().encode(sendFrame));
+
+//         setMessages(prev => [...prev, messageBody]); // Optimistic update
+//         DeviceEventEmitter.emit('newMessage', {
+//           userId: messageBody.senderId,
+//           content: messageBody.content,
+//           timestamp: messageBody.timestamp,
+//         });
+//         setChatText('');
+//       }
+//     } catch (error) {
+//       showSnackbar('sendMessage error');
+//     } finally {
+//       setSendingMessage(false);
+//     }
+//   };
+
+//   const renderChats = ({ item }) => (
+//     <View
+//       style={[
+//         {
+//           alignSelf: item.senderId === user?.id ? 'flex-end' : 'flex-start',
+//           backgroundColor:
+//             item.senderId === user?.id ? chatTheme.primary : chatTheme.surface,
+//         },
+//         styles.chats,
+//       ]}
+//     >
+//       {item.senderId !== user?.id && (
+//         <Text
+//           style={[
+//             theme.fonts.labelMedium,
+//             { color: chatTheme.secondary, marginBottom: 4, },
+//           ]}
+//         >
+//           {item.senderName || 'Unknown'}
+//         </Text>
+//       )}
+
+//       <Text
+//         style={{
+//           color:
+//             item.senderId === user?.id
+//               ? chatTheme.onPrimary
+//               : chatTheme.onSurface,
+//         }}
+//       >
+//         {item.content}
+//       </Text>
+//       <Text
+//         style={[
+//           styles.timestampText,
+//           {
+//             color:
+//               item.senderId === user?.id
+//                 ? theme.colors.onPrimary
+//                 : theme.colors.secondary,
+//             textAlign: 'right',
+//           },
+//         ]}
+//       >
+//         {timestamp(item.timestamp)}
+//       </Text>
+//     </View>
+//   );
+
+//   const renderStatusIndicator = () => {
+//     if (connectionStatus === 'Connecting…') {
+//       return <Loader size={size.iconSm} color={theme.colors.onPrimary} />;
+//     }
+//     const dotColor =
+//       connectionStatus === 'Connected' ? chatTheme.success : chatTheme.error;
+
+//     return <View style={[styles.dot, { backgroundColor: dotColor }]} />;
+//   };
+
+//   const Header = () => (
+//     <View
+//       style={[styles.headerContainer, { backgroundColor: chatTheme.primary }]}
+//     >
+//       <TouchableOpacity onPress={() => navigation.goBack()}>
+//         <MaterialCommunityIcons
+//           name="arrow-left"
+//           size={size.iconMd}
+//           color={chatTheme.onPrimary}
+//         />
+//       </TouchableOpacity>
+
+//       <TouchableOpacity
+//         style={styles.chatsHeader}
+//         onPress={() =>
+//           navigation.navigate(routes.GroupFeeds, {
+//             groupId,
+//           })
+//         }
+//       >
+//         <Text
+//           style={[
+//             theme.fonts.titleMedium,
+//             styles.itemName,
+//             { color: chatTheme.onPrimary },
+//           ]}
+//         >
+//           {groupData.name || 'Group Chat'}
+//         </Text>
+//         {renderStatusIndicator()}
+//       </TouchableOpacity>
+
+//       <TouchableOpacity>
+//         <MaterialCommunityIcons
+//           name="cog"
+//           size={size.iconMd}
+//           color={chatTheme.onPrimary}
+//           onPress={() => navigation.navigate(routes.ChatSetting, { groupId })}
+//         />
+//       </TouchableOpacity>
+//     </View>
+//   );
+
+//   if (loadingChats) {
+//     return (
+//       <View
+//         style={[
+//           styles.loaderContainer,
+//           { backgroundColor: chatTheme.background },
+//         ]}
+//       >
+//         <Loader size={size.iconLg} color={chatTheme.primary} />
+//       </View>
+//     );
+//   }
+
+//   return (
+//     <KeyboardAvoidingView
+//       style={{ flex: 1 }}
+//       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+//       keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 60 : 0}
+//     >
+//       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+//         <View
+//           style={[
+//             styles.container,
+//             {
+//               backgroundColor: chatTheme.background,
+//               paddingBottom: insets.bottom,
+//             },
+//           ]}
+//         >
+//           <Header />
+
+//           <FlatList
+//             ref={flatListRef}
+//             data={combinedChats}
+//             renderItem={renderChats}
+//             keyExtractor={(item, index) =>
+//               item?.id ? item.id.toString() : index.toString()
+//             }
+//             maintainVisibleContentPosition={{
+//               minIndexForVisible: 1,
+//             }}
+//             onScroll={({ nativeEvent }) => {
+//               if (nativeEvent.contentOffset.y <= 50) {
+//                 loadMoreChats();
+//               }
+//             }}
+//             scrollEventThrottle={16}
+//             ListHeaderComponent={
+//               loadingMore ? (
+//                 <View
+//                   style={{
+//                     paddingVertical: 15,
+//                     alignItems: 'center',
+//                     justifyContent: 'center',
+//                   }}
+//                 >
+//                   <Loader size={size.iconSm} color={chatTheme.primary} />
+//                 </View>
+//               ) : null
+//             }
+//           />
+
+//           <View
+//             style={[
+//               styles.chatInputBar,
+//               {
+//                 backgroundColor: chatTheme.background,
+//                 borderTopColor: chatTheme.tertiary,
+//               },
+//             ]}
+//           >
+//             <TextInput
+//               ref={inputRef}
+//               value={chatText}
+//               onChangeText={setChatText}
+//               placeholder="Type a message..."
+//               placeholderTextColor={chatTheme.secondary}
+//               style={[
+//                 styles.input,
+//                 {
+//                   color: chatTheme.onBackground,
+//                   borderColor: chatTheme.tertiary,
+//                 },
+//               ]}
+//               returnKeyType="send"
+//               onSubmitEditing={sendMessage}
+//               editable={!sendingMessage}
+//             />
+
+//             {sendingMessage ? (
+//               <Loader
+//                 size={size.btnIconSize}
+//                 color={chatTheme.primary}
+//                 style={styles.sendLoader}
+//               />
+//             ) : (
+//               <TouchableOpacity onPress={sendMessage}>
+//                 <MaterialCommunityIcons
+//                   name="send"
+//                   size={size.btnIconSize}
+//                   color={
+//                     chatText.trim() ? chatTheme.primary : chatTheme.secondary
+//                   }
+//                 />
+//               </TouchableOpacity>
+//             )}
+//           </View>
+//         </View>
+//       </TouchableWithoutFeedback>
+//     </KeyboardAvoidingView>
+//   );
+// };
+
+// export default GroupChattingScreen;
+
+// const styles = StyleSheet.create({
+//   container: { flex: 1 },
+//   loaderContainer: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   headerContainer: {
+//     flexDirection: 'row',
+//     paddingVertical: 30,
+//     justifyContent: 'space-between',
+//     paddingHorizontal: 20,
+//     alignItems: 'center',
+//     elevation: 2,
+//     zIndex: 10,
+//   },
+//   chatInputBar: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     paddingHorizontal: 10,
+//     paddingVertical: 12,
+//     borderTopWidth: 1,
+//   },
+//   input: {
+//     flex: 1,
+//     height: 40,
+//     borderWidth: 1,
+//     borderRadius: 20,
+//     paddingHorizontal: 15,
+//     marginRight: 10,
+//   },
+//   sendLoader: { marginHorizontal: 5 },
+//   chatsHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+//   dot: { width: 10, height: 10, borderRadius: 5 },
+//   chats: {
+//     borderRadius: 10,
+//     marginVertical: 5,
+//     paddingVertical: 10,
+//     paddingHorizontal: 15,
+//     marginHorizontal: 10,
+//     maxWidth: '80%',
+//   },
+//   timestampText: {
+//     fontSize: 10,
+//     marginTop: 4,
+//     opacity: 0.8,
+//   },
+//   itemName: {
+//     fontWeight: 'bold',
+//   },
+// });
